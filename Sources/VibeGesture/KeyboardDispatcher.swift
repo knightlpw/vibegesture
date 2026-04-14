@@ -190,6 +190,14 @@ final class KeyboardDispatcher {
         }
     }
 
+    func cancelPendingSubmit() {
+        guard discardPendingSubmit() else {
+            return
+        }
+
+        latestResult = .cancelledPendingSubmit(timestamp: Date())
+    }
+
     private func scheduleSubmit(after delay: TimeInterval, shortcut: Shortcut) {
         let token = UUID()
         pendingSubmitToken = token

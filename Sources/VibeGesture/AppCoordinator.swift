@@ -199,6 +199,7 @@ final class AppCoordinator: SafeShutdownHandling {
 
     private func handleForegroundAppGateChange(_ state: ForegroundAppGateState) {
         let wasRecordingActive = appState.isRecordingActive
+        let hadPendingSubmit = keyboardDispatcher.hasPendingSubmit
         appState.foregroundAppGateState = state
 
         let transition = recognitionCoordinator.updateForegroundAppGate(
@@ -207,8 +208,12 @@ final class AppCoordinator: SafeShutdownHandling {
         )
         applyRecognitionTransition(transition)
 
-        if !state.isSupported && wasRecordingActive {
-            performSafeShutdown(stopRecording: true)
+        if !state.isSupported {
+            if wasRecordingActive {
+                performSafeShutdown(stopRecording: true)
+            } else if hadPendingSubmit {
+                keyboardDispatcher.cancelPendingSubmit()
+            }
         }
     }
 }

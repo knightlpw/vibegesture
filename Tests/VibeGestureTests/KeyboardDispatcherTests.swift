@@ -77,6 +77,25 @@ final class KeyboardDispatcherTests: XCTestCase {
 
         XCTAssertEqual(poster.tappedShortcuts.map(\.displayName), ["Fn"])
     }
+
+    func testCancelPendingSubmitWithoutStoppingRecording() async throws {
+        let poster = RecordingKeyboardEventPoster()
+        let dispatcher = KeyboardDispatcher(eventPoster: poster, submitStopDelay: 0.05)
+
+        dispatcher.dispatch(
+            intent: .submit(stopRecordingFirst: true, postStopDelay: 0.05),
+            configuration: .default
+        )
+
+        dispatcher.cancelPendingSubmit()
+
+        XCTAssertEqual(poster.tappedShortcuts.map(\.displayName), ["Fn"])
+        XCTAssertEqual(dispatcher.latestResult.displayName, "Cancelled pending submit")
+
+        try await Task.sleep(nanoseconds: 90_000_000)
+
+        XCTAssertEqual(poster.tappedShortcuts.map(\.displayName), ["Fn"])
+    }
 }
 
 @MainActor
