@@ -48,3 +48,8 @@
 
 ## 提测结论
 - 可提测
+
+## 提交
+
+- `86c8cb4` - `TASK005: add keyboard dispatcher and safe timing scaffold`
+- `3f755c5` - `docs: add TASK005 dev report`
