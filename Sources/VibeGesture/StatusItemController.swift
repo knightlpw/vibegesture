@@ -49,6 +49,22 @@ final class StatusItemController: NSObject {
         stateItem.isEnabled = false
         menu.addItem(stateItem)
 
+        let gestureItem = NSMenuItem(
+            title: "Gesture: \(latestGestureTitle())",
+            action: nil,
+            keyEquivalent: ""
+        )
+        gestureItem.isEnabled = false
+        menu.addItem(gestureItem)
+
+        let actionItem = NSMenuItem(
+            title: "Action: \(appState.latestRecognitionActionIntent.displayName)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        actionItem.isEnabled = false
+        menu.addItem(actionItem)
+
         let permissionItem = NSMenuItem(
             title: "Permissions: \(appState.permissionState.displayName)",
             action: nil,
@@ -115,6 +131,10 @@ final class StatusItemController: NSObject {
         }
 
         return appState.recognitionState.toggleMenuTitle
+    }
+
+    private func latestGestureTitle() -> String {
+        appState.latestGestureInterpretation?.displayText ?? "Waiting for a stable gesture"
     }
 
     @objc private func handleToggleRecognition(_ sender: Any?) {

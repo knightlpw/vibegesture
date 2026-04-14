@@ -9,6 +9,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             header
             permissionCard
+            recognitionCard
             pipelineCard
             shortcutsCard
             scaffoldCard
@@ -57,6 +58,18 @@ struct SettingsView: View {
         }
     }
 
+    private var recognitionCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                settingRow(title: "Recognition state", value: appState.recognitionState.displayName)
+                settingRow(title: "Latest gesture", value: appState.latestGestureInterpretation?.displayText ?? "Waiting for a stable gesture")
+                settingRow(title: "Last action", value: appState.latestRecognitionActionIntent.displayName)
+            }
+        } label: {
+            Text("Recognition")
+        }
+    }
+
     private var permissionCard: some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
@@ -95,7 +108,6 @@ struct SettingsView: View {
                 settingRow(title: "Record toggle", value: appState.configuration.recordToggleShortcut.displayName)
                 settingRow(title: "Submit", value: appState.configuration.submitShortcut.displayName)
                 settingRow(title: "Cancel", value: appState.configuration.cancelShortcut.displayName)
-                settingRow(title: "Recognition state", value: appState.recognitionState.displayName)
             }
         } label: {
             Text("Current scaffold")

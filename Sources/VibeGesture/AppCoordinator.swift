@@ -4,6 +4,7 @@ import AppKit
 final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore = ConfigurationStore()
     private let permissionManager = PermissionManager()
+    private let recognitionCoordinator = RecognitionCoordinator()
     private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
@@ -27,12 +28,23 @@ final class AppCoordinator: SafeShutdownHandling {
         cameraPipelineController.onStateChange = { [weak self] state in
             self?.appState.cameraPipelineState = state
 
-            if case .failed = state, self?.appState.recognitionState == .idle {
-                self?.appState.recognitionState = .disabled
+            if case .failed = state,
+               let currentRecognitionState = self?.appState.recognitionState,
+               currentRecognitionState != .disabled,
+               currentRecognitionState != .errorPermissionMissing {
+                if let transition = self?.recognitionCoordinator.setRecognitionEnabled(
+                    false,
+                    permissionState: self?.appState.permissionState ?? .missingBoth
+                ) {
+                    self?.applyRecognitionTransition(transition)
+                }
             }
         }
         cameraPipelineController.onObservation = { [weak self] observation in
             self?.appState.latestCameraFrameObservation = observation
+            if let transition = self?.recognitionCoordinator.process(frameObservation: observation) {
+                self?.applyRecognitionTransition(transition)
+            }
         }
 
         statusItemController.onToggleRecognition = { [weak self] in
@@ -78,34 +90,20 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func toggleRecognition() {
-        guard appState.permissionState.isReady else {
-            appState.recognitionState = .errorPermissionMissing
-            cameraPipelineController.stop()
-            return
-        }
-
-        switch appState.recognitionState {
-        case .disabled, .errorPermissionMissing:
-            appState.recognitionState = .idle
-            cameraPipelineController.start()
-        default:
-            appState.recognitionState = .disabled
-            cameraPipelineController.stop()
-        }
+        let shouldEnable = appState.recognitionState == .disabled || appState.recognitionState == .errorPermissionMissing
+        let transition = recognitionCoordinator.setRecognitionEnabled(
+            shouldEnable,
+            permissionState: appState.permissionState
+        )
+        applyRecognitionTransition(transition)
     }
 
     private func refreshPermissionState() {
         let newState = permissionManager.refresh()
         appState.permissionState = newState
 
-        if newState.isReady {
-            if appState.recognitionState == .errorPermissionMissing {
-                appState.recognitionState = .disabled
-            }
-        } else {
-            cameraPipelineController.stop()
-            appState.recognitionState = .errorPermissionMissing
-        }
+        let transition = recognitionCoordinator.updatePermissionState(newState)
+        applyRecognitionTransition(transition)
     }
 
     private func showSettings() {
@@ -129,5 +127,25 @@ final class AppCoordinator: SafeShutdownHandling {
     func requestSafeShutdown(reason: SafeShutdownReason) {
         print("Safe shutdown requested: \(reason.rawValue)")
         cameraPipelineController.stop()
+    }
+
+    private func applyRecognitionTransition(_ transition: RecognitionTransition) {
+        appState.recognitionState = transition.state
+
+        if let gestureInterpretation = transition.gestureInterpretation {
+            appState.latestGestureInterpretation = gestureInterpretation
+        }
+
+        if transition.actionIntent.isAction {
+            appState.latestRecognitionActionIntent = transition.actionIntent
+        }
+
+        if transition.shouldStopCamera {
+            cameraPipelineController.stop()
+        }
+
+        if transition.shouldStartCamera {
+            cameraPipelineController.start()
+        }
     }
 }

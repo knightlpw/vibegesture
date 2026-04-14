@@ -22,6 +22,14 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var latestGestureInterpretation: GestureInterpretation? {
+        didSet { notifyChange() }
+    }
+
+    var latestRecognitionActionIntent: RecognitionActionIntent {
+        didSet { notifyChange() }
+    }
+
     var configuration: AppConfiguration {
         didSet { notifyChange() }
     }
@@ -32,6 +40,8 @@ final class AppState {
         self.permissionState = .missingBoth
         self.cameraPipelineState = .stopped
         self.latestCameraFrameObservation = nil
+        self.latestGestureInterpretation = nil
+        self.latestRecognitionActionIntent = .none
     }
 
     var isRecognitionBlockedByPermission: Bool {
