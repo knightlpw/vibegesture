@@ -1,19 +1,26 @@
 import AppKit
 
 @MainActor
-final class AppCoordinator {
+final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore = ConfigurationStore()
+    private let permissionManager = PermissionManager()
     private let appState: AppState
     private let statusItemController: StatusItemController
     private let settingsWindowController: SettingsWindowController
     private let hotKeyManager = GlobalHotKeyManager()
+    private var activationObserver: NSObjectProtocol?
 
     init() {
         let configuration = configurationStore.load()
         let appState = AppState(configuration: configuration)
         self.appState = appState
         self.statusItemController = StatusItemController(appState: appState)
-        self.settingsWindowController = SettingsWindowController(appState: appState)
+        self.settingsWindowController = SettingsWindowController(
+            appState: appState,
+            onOpenSystemSettings: {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
+            }
+        )
 
         statusItemController.onToggleRecognition = { [weak self] in
             self?.toggleRecognition()
@@ -34,6 +41,18 @@ final class AppCoordinator {
                 print("Failed to create initial configuration file: \(error)")
             }
         }
+
+        refreshPermissionState()
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshPermissionState()
+            }
+        }
+
         statusItemController.install()
         registerRecognitionHotKey()
     }
@@ -46,11 +65,29 @@ final class AppCoordinator {
     }
 
     private func toggleRecognition() {
+        guard appState.permissionState.isReady else {
+            appState.recognitionState = .errorPermissionMissing
+            return
+        }
+
         switch appState.recognitionState {
         case .disabled, .errorPermissionMissing:
             appState.recognitionState = .idle
         default:
             appState.recognitionState = .disabled
+        }
+    }
+
+    private func refreshPermissionState() {
+        let newState = permissionManager.refresh()
+        appState.permissionState = newState
+
+        if newState.isReady {
+            if appState.recognitionState == .errorPermissionMissing {
+                appState.recognitionState = .disabled
+            }
+        } else {
+            appState.recognitionState = .errorPermissionMissing
         }
     }
 
@@ -64,6 +101,14 @@ final class AppCoordinator {
         } catch {
             print("Failed to save configuration before quit: \(error)")
         }
+        if let activationObserver {
+            NotificationCenter.default.removeObserver(activationObserver)
+            self.activationObserver = nil
+        }
         NSApp.terminate(nil)
+    }
+
+    func requestSafeShutdown(reason: SafeShutdownReason) {
+        print("Safe shutdown requested: \(reason.rawValue)")
     }
 }

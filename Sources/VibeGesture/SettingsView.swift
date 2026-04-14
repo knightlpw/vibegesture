@@ -3,10 +3,12 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var appState: AppState
+    let openSystemSettings: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
+            permissionCard
             shortcutsCard
             scaffoldCard
 
@@ -20,9 +22,40 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("VibeGesture")
                 .font(.title2.weight(.semibold))
-            Text("Menu bar shell and configuration scaffold")
+            Text("Menu bar shell, configuration scaffold, and permission guidance")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var permissionCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                settingRow(title: "Permission state", value: appState.permissionState.displayName)
+
+                if appState.permissionState.isReady {
+                    Text(appState.permissionState.guidanceMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(appState.permissionState.missingKinds, id: \.self) { kind in
+                            Text("Missing \(kind.displayName)")
+                                .font(.callout)
+                        }
+                    }
+                    Text(appState.permissionState.guidanceMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button(appState.permissionState.guidanceButtonTitle) {
+                        openSystemSettings()
+                    }
+                }
+            }
+        } label: {
+            Text("Permissions")
         }
     }
 
@@ -45,7 +78,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("This phase only establishes the shell.")
                     .font(.headline)
-                Text("Camera capture, Vision hand pose detection, gesture interpretation, app gating, and keyboard dispatch will arrive in later tasks.")
+                Text("Camera capture, Vision hand pose detection, gesture interpretation, app gating, and keyboard dispatch will arrive in later tasks. Safe shutdown is only reserved as an interface for later stages.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

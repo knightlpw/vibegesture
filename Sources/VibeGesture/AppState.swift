@@ -10,6 +10,10 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var permissionState: PermissionState {
+        didSet { notifyChange() }
+    }
+
     var configuration: AppConfiguration {
         didSet { notifyChange() }
     }
@@ -17,6 +21,11 @@ final class AppState {
     init(configuration: AppConfiguration) {
         self.configuration = configuration
         self.recognitionState = .disabled
+        self.permissionState = .missingBoth
+    }
+
+    var isRecognitionBlockedByPermission: Bool {
+        !permissionState.isReady
     }
 
     private func notifyChange() {

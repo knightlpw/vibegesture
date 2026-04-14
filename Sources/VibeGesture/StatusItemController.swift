@@ -49,8 +49,16 @@ final class StatusItemController: NSObject {
         stateItem.isEnabled = false
         menu.addItem(stateItem)
 
+        let permissionItem = NSMenuItem(
+            title: "Permissions: \(appState.permissionState.displayName)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        permissionItem.isEnabled = false
+        menu.addItem(permissionItem)
+
         let toggleItem = NSMenuItem(
-            title: appState.recognitionState.toggleMenuTitle,
+            title: recognitionToggleTitle(),
             action: #selector(handleToggleRecognition(_:)),
             keyEquivalent: ""
         )
@@ -81,13 +89,24 @@ final class StatusItemController: NSObject {
     }
 
     private func statusImage() -> NSImage? {
+        let symbolName = appState.permissionState.isReady
+            ? appState.recognitionState.menuBarSymbolName
+            : "exclamationmark.triangle.fill"
         let image = NSImage(
-            systemSymbolName: appState.recognitionState.menuBarSymbolName,
+            systemSymbolName: symbolName,
             accessibilityDescription: "VibeGesture"
         )
         image?.isTemplate = true
         let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         return image?.withSymbolConfiguration(configuration) ?? image
+    }
+
+    private func recognitionToggleTitle() -> String {
+        guard appState.permissionState.isReady else {
+            return "Recognition Locked"
+        }
+
+        return appState.recognitionState.toggleMenuTitle
     }
 
     @objc private func handleToggleRecognition(_ sender: Any?) {
