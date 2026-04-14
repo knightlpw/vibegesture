@@ -4,6 +4,7 @@ import AppKit
 final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore = ConfigurationStore()
     private let permissionManager = PermissionManager()
+    private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
     private let settingsWindowController: SettingsWindowController
@@ -14,6 +15,7 @@ final class AppCoordinator: SafeShutdownHandling {
         let configuration = configurationStore.load()
         let appState = AppState(configuration: configuration)
         self.appState = appState
+        self.cameraPipelineController = CameraPipelineController()
         self.statusItemController = StatusItemController(appState: appState)
         self.settingsWindowController = SettingsWindowController(
             appState: appState,
@@ -21,6 +23,17 @@ final class AppCoordinator: SafeShutdownHandling {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
             }
         )
+
+        cameraPipelineController.onStateChange = { [weak self] state in
+            self?.appState.cameraPipelineState = state
+
+            if case .failed = state, self?.appState.recognitionState == .idle {
+                self?.appState.recognitionState = .disabled
+            }
+        }
+        cameraPipelineController.onObservation = { [weak self] observation in
+            self?.appState.latestCameraFrameObservation = observation
+        }
 
         statusItemController.onToggleRecognition = { [weak self] in
             self?.toggleRecognition()
@@ -67,14 +80,17 @@ final class AppCoordinator: SafeShutdownHandling {
     private func toggleRecognition() {
         guard appState.permissionState.isReady else {
             appState.recognitionState = .errorPermissionMissing
+            cameraPipelineController.stop()
             return
         }
 
         switch appState.recognitionState {
         case .disabled, .errorPermissionMissing:
             appState.recognitionState = .idle
+            cameraPipelineController.start()
         default:
             appState.recognitionState = .disabled
+            cameraPipelineController.stop()
         }
     }
 
@@ -87,6 +103,7 @@ final class AppCoordinator: SafeShutdownHandling {
                 appState.recognitionState = .disabled
             }
         } else {
+            cameraPipelineController.stop()
             appState.recognitionState = .errorPermissionMissing
         }
     }
@@ -96,6 +113,7 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func terminate() {
+        cameraPipelineController.stop()
         do {
             try configurationStore.save(appState.configuration)
         } catch {
@@ -110,5 +128,6 @@ final class AppCoordinator: SafeShutdownHandling {
 
     func requestSafeShutdown(reason: SafeShutdownReason) {
         print("Safe shutdown requested: \(reason.rawValue)")
+        cameraPipelineController.stop()
     }
 }

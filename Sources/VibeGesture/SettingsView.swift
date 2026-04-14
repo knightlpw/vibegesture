@@ -9,6 +9,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             header
             permissionCard
+            pipelineCard
             shortcutsCard
             scaffoldCard
 
@@ -25,6 +26,34 @@ struct SettingsView: View {
             Text("Menu bar shell, configuration scaffold, and permission guidance")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var pipelineCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                settingRow(title: "Pipeline state", value: appState.cameraPipelineState.displayName)
+
+                Text(appState.cameraPipelineState.detailMessage)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                if let latestObservation = appState.latestCameraFrameObservation {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Latest observation")
+                            .font(.headline)
+                        Text(latestObservation.summaryText)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                        Text(latestObservation.status.detailMessage)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        } label: {
+            Text("Camera pipeline")
         }
     }
 

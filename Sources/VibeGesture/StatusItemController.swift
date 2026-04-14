@@ -57,6 +57,14 @@ final class StatusItemController: NSObject {
         permissionItem.isEnabled = false
         menu.addItem(permissionItem)
 
+        let pipelineItem = NSMenuItem(
+            title: "Camera: \(appState.cameraPipelineState.displayName)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        pipelineItem.isEnabled = false
+        menu.addItem(pipelineItem)
+
         let toggleItem = NSMenuItem(
             title: recognitionToggleTitle(),
             action: #selector(handleToggleRecognition(_:)),

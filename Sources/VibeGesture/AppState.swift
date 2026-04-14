@@ -14,6 +14,14 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var cameraPipelineState: CameraPipelineState {
+        didSet { notifyChange() }
+    }
+
+    var latestCameraFrameObservation: CameraFrameObservation? {
+        didSet { notifyChange() }
+    }
+
     var configuration: AppConfiguration {
         didSet { notifyChange() }
     }
@@ -22,6 +30,8 @@ final class AppState {
         self.configuration = configuration
         self.recognitionState = .disabled
         self.permissionState = .missingBoth
+        self.cameraPipelineState = .stopped
+        self.latestCameraFrameObservation = nil
     }
 
     var isRecognitionBlockedByPermission: Bool {
