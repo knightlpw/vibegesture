@@ -10,6 +10,8 @@ final class VibeGestureTests: XCTestCase {
         XCTAssertEqual(decoded, original)
         XCTAssertEqual(decoded.globalRecognitionShortcut.displayName, "⌥⇧G")
         XCTAssertEqual(decoded.recordToggleShortcut.displayName, "Fn")
+        XCTAssertEqual(decoded.recordToggleShortcut.keyCode, 63)
+        XCTAssertTrue(decoded.recordToggleShortcut.isSingleKey)
         XCTAssertEqual(decoded.submitShortcut.displayName, "Enter")
         XCTAssertEqual(decoded.cancelShortcut.displayName, "Esc")
     }

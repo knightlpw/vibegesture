@@ -5,6 +5,7 @@ final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore = ConfigurationStore()
     private let permissionManager = PermissionManager()
     private let recognitionCoordinator = RecognitionCoordinator()
+    private let keyboardDispatcher = KeyboardDispatcher()
     private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
@@ -24,6 +25,9 @@ final class AppCoordinator: SafeShutdownHandling {
                 NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
             }
         )
+        keyboardDispatcher.onResultChange = { [weak self] result in
+            self?.appState.latestKeyboardDispatchResult = result
+        }
 
         cameraPipelineController.onStateChange = { [weak self] state in
             self?.appState.cameraPipelineState = state
@@ -37,6 +41,7 @@ final class AppCoordinator: SafeShutdownHandling {
                     permissionState: self?.appState.permissionState ?? .missingBoth
                 ) {
                     self?.applyRecognitionTransition(transition)
+                    self?.performSafeShutdown(previousRecognitionState: currentRecognitionState)
                 }
             }
         }
@@ -90,20 +95,30 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func toggleRecognition() {
+        let previousRecognitionState = appState.recognitionState
         let shouldEnable = appState.recognitionState == .disabled || appState.recognitionState == .errorPermissionMissing
         let transition = recognitionCoordinator.setRecognitionEnabled(
             shouldEnable,
             permissionState: appState.permissionState
         )
         applyRecognitionTransition(transition)
+
+        if !shouldEnable {
+            performSafeShutdown(previousRecognitionState: previousRecognitionState)
+        }
     }
 
     private func refreshPermissionState() {
+        let previousRecognitionState = appState.recognitionState
         let newState = permissionManager.refresh()
         appState.permissionState = newState
 
         let transition = recognitionCoordinator.updatePermissionState(newState)
         applyRecognitionTransition(transition)
+
+        if !newState.isReady {
+            performSafeShutdown(previousRecognitionState: previousRecognitionState)
+        }
     }
 
     private func showSettings() {
@@ -111,6 +126,7 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func terminate() {
+        performSafeShutdown(previousRecognitionState: appState.recognitionState)
         cameraPipelineController.stop()
         do {
             try configurationStore.save(appState.configuration)
@@ -126,6 +142,7 @@ final class AppCoordinator: SafeShutdownHandling {
 
     func requestSafeShutdown(reason: SafeShutdownReason) {
         print("Safe shutdown requested: \(reason.rawValue)")
+        performSafeShutdown(previousRecognitionState: appState.recognitionState)
         cameraPipelineController.stop()
     }
 
@@ -138,6 +155,16 @@ final class AppCoordinator: SafeShutdownHandling {
 
         if transition.actionIntent.isAction {
             appState.latestRecognitionActionIntent = transition.actionIntent
+            keyboardDispatcher.dispatch(
+                intent: transition.actionIntent,
+                configuration: appState.configuration
+            )
+        } else if transition.gestureInterpretation?.candidate == .cancelStarted,
+                  keyboardDispatcher.hasPendingSubmit {
+            keyboardDispatcher.dispatch(
+                intent: .cancel(stopRecordingFirst: false),
+                configuration: appState.configuration
+            )
         }
 
         if transition.shouldStopCamera {
@@ -147,5 +174,12 @@ final class AppCoordinator: SafeShutdownHandling {
         if transition.shouldStartCamera {
             cameraPipelineController.start()
         }
+    }
+
+    private func performSafeShutdown(previousRecognitionState: RecognitionState) {
+        keyboardDispatcher.performSafeShutdown(
+            stopRecording: previousRecognitionState == .recordingActive,
+            configuration: appState.configuration
+        )
     }
 }

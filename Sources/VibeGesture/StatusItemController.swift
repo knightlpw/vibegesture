@@ -65,6 +65,14 @@ final class StatusItemController: NSObject {
         actionItem.isEnabled = false
         menu.addItem(actionItem)
 
+        let keyboardItem = NSMenuItem(
+            title: "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        keyboardItem.isEnabled = false
+        menu.addItem(keyboardItem)
+
         let permissionItem = NSMenuItem(
             title: "Permissions: \(appState.permissionState.displayName)",
             action: nil,

@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 struct AppConfiguration: Codable, Equatable {
@@ -12,7 +13,11 @@ struct AppConfiguration: Codable, Equatable {
             modifiers: [.option, .shift],
             displayName: "⌥⇧G"
         ),
-        recordToggleShortcut: Shortcut.symbolic(displayName: "Fn"),
+        recordToggleShortcut: Shortcut(
+            keyCode: 63,
+            modifiers: [],
+            displayName: "Fn"
+        ),
         submitShortcut: Shortcut(
             keyCode: 36,
             modifiers: [],
@@ -40,6 +45,10 @@ struct Shortcut: Codable, Equatable {
     static func symbolic(displayName: String) -> Shortcut {
         Shortcut(keyCode: nil, modifiers: [], displayName: displayName)
     }
+
+    var isSingleKey: Bool {
+        keyCode != nil && modifiers.isEmpty
+    }
 }
 
 struct CarbonModifierFlags: OptionSet, Codable, Equatable {
@@ -62,5 +71,11 @@ struct CarbonModifierFlags: OptionSet, Codable, Equatable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
+    }
+}
+
+extension CarbonModifierFlags {
+    var cgEventFlags: CGEventFlags {
+        CGEventFlags(rawValue: UInt64(rawValue))
     }
 }

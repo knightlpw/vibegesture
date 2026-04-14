@@ -64,6 +64,7 @@ struct SettingsView: View {
                 settingRow(title: "Recognition state", value: appState.recognitionState.displayName)
                 settingRow(title: "Latest gesture", value: appState.latestGestureInterpretation?.displayText ?? "Waiting for a stable gesture")
                 settingRow(title: "Last action", value: appState.latestRecognitionActionIntent.displayName)
+                settingRow(title: "Keyboard result", value: appState.latestKeyboardDispatchResult.displayName)
             }
         } label: {
             Text("Recognition")
@@ -119,7 +120,7 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("This phase only establishes the shell.")
                     .font(.headline)
-                Text("Camera capture, Vision hand pose detection, gesture interpretation, app gating, and keyboard dispatch will arrive in later tasks. Safe shutdown is only reserved as an interface for later stages.")
+                Text("Camera capture, Vision hand pose detection, gesture interpretation, and app gating will continue in later tasks. Keyboard dispatch and safe timing are now in place, and safe shutdown remains available for later stages.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

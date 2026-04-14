@@ -30,6 +30,10 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var latestKeyboardDispatchResult: KeyboardDispatchResult {
+        didSet { notifyChange() }
+    }
+
     var configuration: AppConfiguration {
         didSet { notifyChange() }
     }
@@ -42,6 +46,7 @@ final class AppState {
         self.latestCameraFrameObservation = nil
         self.latestGestureInterpretation = nil
         self.latestRecognitionActionIntent = .none
+        self.latestKeyboardDispatchResult = .idle
     }
 
     var isRecognitionBlockedByPermission: Bool {
