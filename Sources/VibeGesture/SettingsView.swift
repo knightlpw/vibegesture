@@ -9,6 +9,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 18) {
             header
             permissionCard
+            gatingCard
             recognitionCard
             pipelineCard
             shortcutsCard
@@ -69,6 +70,20 @@ struct SettingsView: View {
             }
         } label: {
             Text("Recognition")
+        }
+    }
+
+    private var gatingCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                settingRow(title: "Gate state", value: appState.foregroundAppGateState.displayName)
+                Text(appState.foregroundAppGateState.detailMessage)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } label: {
+            Text("Foreground app gate")
         }
     }
 

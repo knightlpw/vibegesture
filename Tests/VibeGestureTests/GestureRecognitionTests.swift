@@ -82,6 +82,13 @@ final class GestureRecognitionTests: XCTestCase {
         var machine = RecognitionStateMachine()
         let baseTime = Date(timeIntervalSinceReferenceDate: 3_000)
 
+        let gateSupported = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime
+        )
+        XCTAssertEqual(gateSupported.state, .disabled)
+
         let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
         XCTAssertEqual(enable.state, .idle)
         XCTAssertTrue(enable.shouldStartCamera)
@@ -140,6 +147,13 @@ final class GestureRecognitionTests: XCTestCase {
         var machine = RecognitionStateMachine()
         let baseTime = Date(timeIntervalSinceReferenceDate: 3_500)
 
+        let gateSupported = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime
+        )
+        XCTAssertEqual(gateSupported.state, .disabled)
+
         let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
         XCTAssertEqual(enable.state, .idle)
         XCTAssertFalse(enable.recordingActive)
@@ -170,6 +184,13 @@ final class GestureRecognitionTests: XCTestCase {
         var machine = RecognitionStateMachine()
         let baseTime = Date(timeIntervalSinceReferenceDate: 4_000)
 
+        let gateSupported = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime
+        )
+        XCTAssertEqual(gateSupported.state, .disabled)
+
         let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
         XCTAssertEqual(enable.state, .idle)
 
@@ -180,6 +201,82 @@ final class GestureRecognitionTests: XCTestCase {
         let permissionRecovered = machine.updatePermissionState(.ready, timestamp: baseTime.addingTimeInterval(0.4))
         XCTAssertEqual(permissionRecovered.state, .idle)
         XCTAssertTrue(permissionRecovered.shouldStartCamera)
+    }
+
+    func testForegroundAppGatePolicyClassifiesSupportedAndUnsupportedApps() {
+        let codex = ForegroundAppGatePolicy.classify(
+            bundleIdentifier: "com.openai.codex",
+            applicationName: "Codex"
+        )
+        XCTAssertEqual(
+            codex,
+            .supported(
+                ForegroundAppInfo(
+                    applicationName: "Codex",
+                    bundleIdentifier: "com.openai.codex"
+                )
+            )
+        )
+
+        let unsupported = ForegroundAppGatePolicy.classify(
+            bundleIdentifier: "com.apple.Safari",
+            applicationName: "Safari"
+        )
+        XCTAssertEqual(
+            unsupported,
+            .unsupported(
+                ForegroundAppInfo(
+                    applicationName: "Safari",
+                    bundleIdentifier: "com.apple.Safari"
+                )
+            )
+        )
+
+        let unknown = ForegroundAppGatePolicy.classify(bundleIdentifier: nil, applicationName: nil)
+        XCTAssertEqual(unknown, .unknown)
+    }
+
+    func testRecognitionStateMachineSuspendsWhenForegroundAppGateIsLost() {
+        var machine = RecognitionStateMachine()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 4_500)
+
+        let gateSupported = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime
+        )
+        XCTAssertEqual(gateSupported.state, .disabled)
+
+        let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
+        XCTAssertEqual(enable.state, .idle)
+
+        let pinchStarted = machine.process(
+            gestureInterpretation: GestureInterpretation(
+                timestamp: baseTime.addingTimeInterval(0.1),
+                candidate: .pinchStarted,
+                confidence: 1.0,
+                summary: "Pinch pose stabilized"
+            )
+        )
+        XCTAssertEqual(pinchStarted.state, .cooldown)
+        XCTAssertTrue(pinchStarted.recordingActive)
+
+        let gateLost = machine.updateForegroundAppGate(
+            false,
+            permissionState: .ready,
+            timestamp: baseTime.addingTimeInterval(0.2)
+        )
+        XCTAssertEqual(gateLost.state, .disabled)
+        XCTAssertFalse(gateLost.recordingActive)
+        XCTAssertTrue(gateLost.shouldStopCamera)
+
+        let gateRestored = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime.addingTimeInterval(0.4)
+        )
+        XCTAssertEqual(gateRestored.state, .idle)
+        XCTAssertTrue(gateRestored.shouldStartCamera)
     }
 
     private enum SyntheticPose {

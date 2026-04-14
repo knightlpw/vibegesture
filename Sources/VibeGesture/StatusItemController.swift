@@ -73,6 +73,14 @@ final class StatusItemController: NSObject {
         recordingItem.isEnabled = false
         menu.addItem(recordingItem)
 
+        let gateItem = NSMenuItem(
+            title: "Gate: \(appState.foregroundAppGateState.displayName)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        gateItem.isEnabled = false
+        menu.addItem(gateItem)
+
         let keyboardItem = NSMenuItem(
             title: "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
             action: nil,
@@ -129,9 +137,9 @@ final class StatusItemController: NSObject {
     }
 
     private func statusImage() -> NSImage? {
-        let symbolName = appState.permissionState.isReady
-            ? appState.recognitionState.menuBarSymbolName
-            : "exclamationmark.triangle.fill"
+        let symbolName = !appState.permissionState.isReady || !appState.foregroundAppGateState.isSupported
+            ? "exclamationmark.triangle.fill"
+            : appState.recognitionState.menuBarSymbolName
         let image = NSImage(
             systemSymbolName: symbolName,
             accessibilityDescription: "VibeGesture"

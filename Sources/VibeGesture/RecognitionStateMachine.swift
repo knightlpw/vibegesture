@@ -8,6 +8,7 @@ struct RecognitionStateMachine {
 
     private var recognitionEnabled = false
     private var permissionState: PermissionState = .missingBoth
+    private var foregroundAppSupported = false
     private var cooldownDeadline: Date?
     private var cooldownReturnState: RecognitionState = .idle
 
@@ -25,6 +26,8 @@ struct RecognitionStateMachine {
         let previousState = state
 
         if !enabled {
+            state = .disabled
+        } else if !foregroundAppSupported {
             state = .disabled
         } else if permissionState.isReady {
             state = .idle
@@ -53,6 +56,8 @@ struct RecognitionStateMachine {
 
         if !permissionState.isReady {
             state = .errorPermissionMissing
+        } else if !foregroundAppSupported {
+            state = .disabled
         } else if recognitionEnabled {
             state = .idle
         } else {
@@ -75,7 +80,7 @@ struct RecognitionStateMachine {
         latestGestureInterpretation = gestureInterpretation
         resolveCooldownIfNeeded(at: gestureInterpretation.timestamp)
 
-        guard recognitionEnabled, permissionState.isReady else {
+        guard recognitionEnabled, permissionState.isReady, foregroundAppSupported else {
             return makeTransition(
                 gestureInterpretation: gestureInterpretation,
                 actionIntent: .none,
@@ -141,6 +146,47 @@ struct RecognitionStateMachine {
             actionIntent: actionIntent,
             shouldStartCamera: false,
             shouldStopCamera: false
+        )
+    }
+
+    mutating func updateForegroundAppGate(
+        _ supported: Bool,
+        permissionState: PermissionState,
+        timestamp: Date = Date()
+    ) -> RecognitionTransition {
+        _ = timestamp
+        guard supported != foregroundAppSupported else {
+            return makeTransition(
+                gestureInterpretation: nil,
+                actionIntent: .none,
+                shouldStartCamera: false,
+                shouldStopCamera: false
+            )
+        }
+
+        foregroundAppSupported = supported
+        self.permissionState = permissionState
+        cooldownDeadline = nil
+        cooldownReturnState = .idle
+
+        let previousState = state
+
+        if !supported {
+            recordingActive = false
+            state = .disabled
+        } else if !recognitionEnabled {
+            state = .disabled
+        } else if permissionState.isReady {
+            state = .idle
+        } else {
+            state = .errorPermissionMissing
+        }
+
+        return makeTransition(
+            gestureInterpretation: nil,
+            actionIntent: .none,
+            shouldStartCamera: previousState != .idle && state == .idle,
+            shouldStopCamera: previousState != .disabled && state == .disabled
         )
     }
 

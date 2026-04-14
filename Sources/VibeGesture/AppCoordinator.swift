@@ -6,6 +6,7 @@ final class AppCoordinator: SafeShutdownHandling {
     private let permissionManager = PermissionManager()
     private let recognitionCoordinator = RecognitionCoordinator()
     private let keyboardDispatcher = KeyboardDispatcher()
+    private let foregroundAppGateMonitor = ForegroundAppGateMonitor()
     private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
@@ -28,6 +29,9 @@ final class AppCoordinator: SafeShutdownHandling {
         keyboardDispatcher.onResultChange = { [weak self] result in
             self?.appState.latestKeyboardDispatchResult = result
         }
+        foregroundAppGateMonitor.onStateChange = { [weak self] state in
+            self?.handleForegroundAppGateChange(state)
+        }
 
         cameraPipelineController.onStateChange = { [weak self] state in
             self?.appState.cameraPipelineState = state
@@ -47,6 +51,9 @@ final class AppCoordinator: SafeShutdownHandling {
         }
         cameraPipelineController.onObservation = { [weak self] observation in
             self?.appState.latestCameraFrameObservation = observation
+            guard self?.appState.foregroundAppGateState.isSupported == true else {
+                return
+            }
             if let transition = self?.recognitionCoordinator.process(frameObservation: observation) {
                 self?.applyRecognitionTransition(transition)
             }
@@ -72,6 +79,7 @@ final class AppCoordinator: SafeShutdownHandling {
             }
         }
 
+        foregroundAppGateMonitor.startObserving()
         refreshPermissionState()
         activationObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
@@ -79,6 +87,7 @@ final class AppCoordinator: SafeShutdownHandling {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor [weak self] in
+                self?.foregroundAppGateMonitor.refresh()
                 self?.refreshPermissionState()
             }
         }
@@ -135,6 +144,7 @@ final class AppCoordinator: SafeShutdownHandling {
             NotificationCenter.default.removeObserver(activationObserver)
             self.activationObserver = nil
         }
+        foregroundAppGateMonitor.stopObserving()
         NSApp.terminate(nil)
     }
 
@@ -157,7 +167,6 @@ final class AppCoordinator: SafeShutdownHandling {
                 intent: transition.actionIntent,
                 configuration: appState.configuration
             )
-            appState.isRecordingActive = transition.recordingActive
         } else if transition.gestureInterpretation?.candidate == .cancelStarted,
                   keyboardDispatcher.hasPendingSubmit {
             keyboardDispatcher.dispatch(
@@ -165,6 +174,8 @@ final class AppCoordinator: SafeShutdownHandling {
                 configuration: appState.configuration
             )
         }
+
+        appState.isRecordingActive = transition.recordingActive
 
         if transition.shouldStopCamera {
             cameraPipelineController.stop()
@@ -183,6 +194,21 @@ final class AppCoordinator: SafeShutdownHandling {
         if stopRecording {
             appState.isRecordingActive = false
             recognitionCoordinator.setRecordingActive(false)
+        }
+    }
+
+    private func handleForegroundAppGateChange(_ state: ForegroundAppGateState) {
+        let wasRecordingActive = appState.isRecordingActive
+        appState.foregroundAppGateState = state
+
+        let transition = recognitionCoordinator.updateForegroundAppGate(
+            state.isSupported,
+            permissionState: appState.permissionState
+        )
+        applyRecognitionTransition(transition)
+
+        if !state.isSupported && wasRecordingActive {
+            performSafeShutdown(stopRecording: true)
         }
     }
 }

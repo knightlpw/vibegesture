@@ -34,6 +34,10 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var foregroundAppGateState: ForegroundAppGateState {
+        didSet { notifyChange() }
+    }
+
     var latestKeyboardDispatchResult: KeyboardDispatchResult {
         didSet { notifyChange() }
     }
@@ -51,11 +55,16 @@ final class AppState {
         self.latestGestureInterpretation = nil
         self.latestRecognitionActionIntent = .none
         self.isRecordingActive = false
+        self.foregroundAppGateState = .unknown
         self.latestKeyboardDispatchResult = .idle
     }
 
     var isRecognitionBlockedByPermission: Bool {
         !permissionState.isReady
+    }
+
+    var isForegroundAppSupported: Bool {
+        foregroundAppGateState.isSupported
     }
 
     private func notifyChange() {

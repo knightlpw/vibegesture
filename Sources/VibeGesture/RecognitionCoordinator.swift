@@ -45,6 +45,18 @@ final class RecognitionCoordinator {
         return stateMachine.process(gestureInterpretation: interpretation, timestamp: interpretation.timestamp)
     }
 
+    func updateForegroundAppGate(
+        _ supported: Bool,
+        permissionState: PermissionState,
+        timestamp: Date = Date()
+    ) -> RecognitionTransition {
+        stateMachine.updateForegroundAppGate(
+            supported,
+            permissionState: permissionState,
+            timestamp: timestamp
+        )
+    }
+
     func setRecordingActive(_ active: Bool) {
         stateMachine.setRecordingActive(active)
     }
