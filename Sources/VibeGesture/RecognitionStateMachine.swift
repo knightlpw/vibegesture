@@ -2,6 +2,7 @@ import Foundation
 
 struct RecognitionStateMachine {
     private(set) var state: RecognitionState = .disabled
+    private(set) var recordingActive = false
     private(set) var latestGestureInterpretation: GestureInterpretation?
     private(set) var latestActionIntent: RecognitionActionIntent = .none
 
@@ -108,21 +109,24 @@ struct RecognitionStateMachine {
             actionIntent = .none
         case .pinchStarted:
             actionIntent = .toggleRecording
+            recordingActive.toggle()
             cooldownDeadline = gestureInterpretation.timestamp.addingTimeInterval(Self.cooldownDuration)
             cooldownReturnState = (state == .recordingActive) ? .idle : .recordingActive
             state = .cooldown
         case .submitStarted:
-            let stopRecordingFirst = state == .recordingActive
+            let stopRecordingFirst = recordingActive
             actionIntent = .submit(
                 stopRecordingFirst: stopRecordingFirst,
                 postStopDelay: stopRecordingFirst ? Self.submitStopDelay : 0
             )
+            recordingActive = false
             cooldownDeadline = gestureInterpretation.timestamp.addingTimeInterval(Self.cooldownDuration)
             cooldownReturnState = .idle
             state = .cooldown
         case .cancelStarted:
-            let stopRecordingFirst = state == .recordingActive
+            let stopRecordingFirst = recordingActive
             actionIntent = .cancel(stopRecordingFirst: stopRecordingFirst)
+            recordingActive = false
             cooldownDeadline = gestureInterpretation.timestamp.addingTimeInterval(Self.cooldownDuration)
             cooldownReturnState = .idle
             state = .cooldown
@@ -138,6 +142,10 @@ struct RecognitionStateMachine {
             shouldStartCamera: false,
             shouldStopCamera: false
         )
+    }
+
+    mutating func setRecordingActive(_ active: Bool) {
+        recordingActive = active
     }
 
     private mutating func resolveCooldownIfNeeded(at timestamp: Date) {
@@ -158,6 +166,7 @@ struct RecognitionStateMachine {
     ) -> RecognitionTransition {
         return RecognitionTransition(
             state: state,
+            recordingActive: recordingActive,
             gestureInterpretation: gestureInterpretation,
             actionIntent: actionIntent,
             shouldStartCamera: shouldStartCamera,

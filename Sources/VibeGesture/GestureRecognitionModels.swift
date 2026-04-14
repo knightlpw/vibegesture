@@ -85,6 +85,7 @@ enum RecognitionActionIntent: Equatable {
 
 struct RecognitionTransition: Equatable {
     let state: RecognitionState
+    let recordingActive: Bool
     let gestureInterpretation: GestureInterpretation?
     let actionIntent: RecognitionActionIntent
     let shouldStartCamera: Bool

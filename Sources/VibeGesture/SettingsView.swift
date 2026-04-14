@@ -62,6 +62,7 @@ struct SettingsView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 settingRow(title: "Recognition state", value: appState.recognitionState.displayName)
+                settingRow(title: "Recording state", value: appState.isRecordingActive ? "Active" : "Inactive")
                 settingRow(title: "Latest gesture", value: appState.latestGestureInterpretation?.displayText ?? "Waiting for a stable gesture")
                 settingRow(title: "Last action", value: appState.latestRecognitionActionIntent.displayName)
                 settingRow(title: "Keyboard result", value: appState.latestKeyboardDispatchResult.displayName)

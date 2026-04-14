@@ -44,4 +44,8 @@ final class RecognitionCoordinator {
         let interpretation = interpreter.interpret(frameObservation: frameObservation)
         return stateMachine.process(gestureInterpretation: interpretation, timestamp: interpretation.timestamp)
     }
+
+    func setRecordingActive(_ active: Bool) {
+        stateMachine.setRecordingActive(active)
+    }
 }

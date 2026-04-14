@@ -30,6 +30,10 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var isRecordingActive: Bool {
+        didSet { notifyChange() }
+    }
+
     var latestKeyboardDispatchResult: KeyboardDispatchResult {
         didSet { notifyChange() }
     }
@@ -46,6 +50,7 @@ final class AppState {
         self.latestCameraFrameObservation = nil
         self.latestGestureInterpretation = nil
         self.latestRecognitionActionIntent = .none
+        self.isRecordingActive = false
         self.latestKeyboardDispatchResult = .idle
     }
 

@@ -41,7 +41,7 @@ final class AppCoordinator: SafeShutdownHandling {
                     permissionState: self?.appState.permissionState ?? .missingBoth
                 ) {
                     self?.applyRecognitionTransition(transition)
-                    self?.performSafeShutdown(previousRecognitionState: currentRecognitionState)
+                    self?.performSafeShutdown(stopRecording: self?.appState.isRecordingActive ?? false)
                 }
             }
         }
@@ -95,7 +95,6 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func toggleRecognition() {
-        let previousRecognitionState = appState.recognitionState
         let shouldEnable = appState.recognitionState == .disabled || appState.recognitionState == .errorPermissionMissing
         let transition = recognitionCoordinator.setRecognitionEnabled(
             shouldEnable,
@@ -104,12 +103,11 @@ final class AppCoordinator: SafeShutdownHandling {
         applyRecognitionTransition(transition)
 
         if !shouldEnable {
-            performSafeShutdown(previousRecognitionState: previousRecognitionState)
+            performSafeShutdown(stopRecording: appState.isRecordingActive)
         }
     }
 
     private func refreshPermissionState() {
-        let previousRecognitionState = appState.recognitionState
         let newState = permissionManager.refresh()
         appState.permissionState = newState
 
@@ -117,7 +115,7 @@ final class AppCoordinator: SafeShutdownHandling {
         applyRecognitionTransition(transition)
 
         if !newState.isReady {
-            performSafeShutdown(previousRecognitionState: previousRecognitionState)
+            performSafeShutdown(stopRecording: appState.isRecordingActive)
         }
     }
 
@@ -126,7 +124,7 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func terminate() {
-        performSafeShutdown(previousRecognitionState: appState.recognitionState)
+        performSafeShutdown(stopRecording: appState.isRecordingActive)
         cameraPipelineController.stop()
         do {
             try configurationStore.save(appState.configuration)
@@ -142,7 +140,7 @@ final class AppCoordinator: SafeShutdownHandling {
 
     func requestSafeShutdown(reason: SafeShutdownReason) {
         print("Safe shutdown requested: \(reason.rawValue)")
-        performSafeShutdown(previousRecognitionState: appState.recognitionState)
+        performSafeShutdown(stopRecording: appState.isRecordingActive)
         cameraPipelineController.stop()
     }
 
@@ -159,6 +157,7 @@ final class AppCoordinator: SafeShutdownHandling {
                 intent: transition.actionIntent,
                 configuration: appState.configuration
             )
+            appState.isRecordingActive = transition.recordingActive
         } else if transition.gestureInterpretation?.candidate == .cancelStarted,
                   keyboardDispatcher.hasPendingSubmit {
             keyboardDispatcher.dispatch(
@@ -176,10 +175,14 @@ final class AppCoordinator: SafeShutdownHandling {
         }
     }
 
-    private func performSafeShutdown(previousRecognitionState: RecognitionState) {
+    private func performSafeShutdown(stopRecording: Bool) {
         keyboardDispatcher.performSafeShutdown(
-            stopRecording: previousRecognitionState == .recordingActive,
+            stopRecording: stopRecording,
             configuration: appState.configuration
         )
+        if stopRecording {
+            appState.isRecordingActive = false
+            recognitionCoordinator.setRecordingActive(false)
+        }
     }
 }

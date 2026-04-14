@@ -97,6 +97,7 @@ final class GestureRecognitionTests: XCTestCase {
         )
         XCTAssertEqual(pinchStarted.state, .cooldown)
         XCTAssertEqual(pinchStarted.actionIntent, .toggleRecording)
+        XCTAssertTrue(pinchStarted.recordingActive)
         XCTAssertEqual(machine.latestActionIntent, .toggleRecording)
 
         let pinchCooldownExit = machine.process(
@@ -107,6 +108,7 @@ final class GestureRecognitionTests: XCTestCase {
         )
         XCTAssertEqual(pinchCooldownExit.state, .recordingActive)
         XCTAssertEqual(pinchCooldownExit.actionIntent, .none)
+        XCTAssertTrue(pinchCooldownExit.recordingActive)
 
         let submitStarted = machine.process(
             gestureInterpretation: GestureInterpretation(
@@ -121,6 +123,7 @@ final class GestureRecognitionTests: XCTestCase {
             submitStarted.actionIntent,
             .submit(stopRecordingFirst: true, postStopDelay: 0.3)
         )
+        XCTAssertFalse(submitStarted.recordingActive)
 
         let submitCooldownExit = machine.process(
             gestureInterpretation: GestureInterpretation.noAction(
@@ -130,6 +133,37 @@ final class GestureRecognitionTests: XCTestCase {
         )
         XCTAssertEqual(submitCooldownExit.state, .idle)
         XCTAssertEqual(submitCooldownExit.actionIntent, .none)
+        XCTAssertFalse(submitCooldownExit.recordingActive)
+    }
+
+    func testRecognitionStateMachineKeepsRecordingStateWhenDisabledDuringCooldown() {
+        var machine = RecognitionStateMachine()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 3_500)
+
+        let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
+        XCTAssertEqual(enable.state, .idle)
+        XCTAssertFalse(enable.recordingActive)
+
+        let pinchStarted = machine.process(
+            gestureInterpretation: GestureInterpretation(
+                timestamp: baseTime.addingTimeInterval(0.1),
+                candidate: .pinchStarted,
+                confidence: 1.0,
+                summary: "Pinch pose stabilized"
+            )
+        )
+        XCTAssertEqual(pinchStarted.state, .cooldown)
+        XCTAssertEqual(pinchStarted.actionIntent, .toggleRecording)
+        XCTAssertTrue(pinchStarted.recordingActive)
+
+        let disableDuringCooldown = machine.setRecognitionEnabled(
+            false,
+            permissionState: .ready,
+            timestamp: baseTime.addingTimeInterval(0.5)
+        )
+        XCTAssertEqual(disableDuringCooldown.state, .disabled)
+        XCTAssertTrue(disableDuringCooldown.recordingActive)
+        XCTAssertTrue(disableDuringCooldown.shouldStopCamera)
     }
 
     func testRecognitionStateMachineHandlesPermissionLossAndRecovery() {

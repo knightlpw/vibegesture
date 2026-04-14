@@ -65,6 +65,14 @@ final class StatusItemController: NSObject {
         actionItem.isEnabled = false
         menu.addItem(actionItem)
 
+        let recordingItem = NSMenuItem(
+            title: "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")",
+            action: nil,
+            keyEquivalent: ""
+        )
+        recordingItem.isEnabled = false
+        menu.addItem(recordingItem)
+
         let keyboardItem = NSMenuItem(
             title: "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
             action: nil,
