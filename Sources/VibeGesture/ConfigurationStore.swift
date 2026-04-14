@@ -2,8 +2,10 @@ import Foundation
 
 final class ConfigurationStore {
     private let fileURL: URL
+    private let fileManager: FileManager
 
     init(fileURL: URL? = nil, fileManager: FileManager = .default) {
+        self.fileManager = fileManager
         if let fileURL {
             self.fileURL = fileURL
             return
@@ -18,7 +20,7 @@ final class ConfigurationStore {
     }
 
     var hasStoredConfiguration: Bool {
-        FileManager.default.fileExists(atPath: fileURL.path)
+        fileManager.fileExists(atPath: fileURL.path)
     }
 
     func load() -> AppConfiguration {
@@ -39,7 +41,7 @@ final class ConfigurationStore {
 
     private func ensureParentDirectoryExists() throws {
         let directory = fileURL.deletingLastPathComponent()
-        try FileManager.default.createDirectory(
+        try fileManager.createDirectory(
             at: directory,
             withIntermediateDirectories: true,
             attributes: nil

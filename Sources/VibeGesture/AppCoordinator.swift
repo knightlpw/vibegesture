@@ -2,7 +2,7 @@ import AppKit
 
 @MainActor
 final class AppCoordinator: SafeShutdownHandling {
-    private let configurationStore = ConfigurationStore()
+    private let configurationStore: ConfigurationStore
     private let permissionManager = PermissionManager()
     private let recognitionCoordinator = RecognitionCoordinator()
     private let keyboardDispatcher = KeyboardDispatcher()
@@ -11,10 +11,15 @@ final class AppCoordinator: SafeShutdownHandling {
     private let appState: AppState
     private let statusItemController: StatusItemController
     private let settingsWindowController: SettingsWindowController
-    private let hotKeyManager = GlobalHotKeyManager()
+    private let hotKeyManager: GlobalHotKeyManaging
     private var activationObserver: NSObjectProtocol?
 
-    init() {
+    init(
+        configurationStore: ConfigurationStore = ConfigurationStore(),
+        hotKeyManager: GlobalHotKeyManaging = GlobalHotKeyManager()
+    ) {
+        self.configurationStore = configurationStore
+        self.hotKeyManager = hotKeyManager
         let configuration = configurationStore.load()
         let appState = AppState(configuration: configuration)
         self.appState = appState
@@ -119,7 +124,7 @@ final class AppCoordinator: SafeShutdownHandling {
         }
     }
 
-    private func updateConfiguration(_ configuration: AppConfiguration) {
+    func updateConfiguration(_ configuration: AppConfiguration) {
         guard configuration.recordToggleShortcut.isSingleKey else {
             print("Rejected configuration update: record toggle must be a single key")
             return

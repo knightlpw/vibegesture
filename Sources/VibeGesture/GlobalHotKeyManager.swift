@@ -1,6 +1,11 @@
 import AppKit
 import Carbon
 
+@MainActor
+protocol GlobalHotKeyManaging {
+    func register(shortcut: Shortcut, action: @escaping () -> Void)
+}
+
 final class GlobalHotKeyManager {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
@@ -68,6 +73,8 @@ final class GlobalHotKeyManager {
         callback?()
     }
 }
+
+extension GlobalHotKeyManager: GlobalHotKeyManaging {}
 
 private let hotKeyEventHandler: EventHandlerUPP = { _, _, userData in
     guard let userData else {
