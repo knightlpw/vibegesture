@@ -3,11 +3,16 @@ import Foundation
 final class ConfigurationStore {
     private let fileURL: URL
 
-    init(fileManager: FileManager = .default) {
+    init(fileURL: URL? = nil, fileManager: FileManager = .default) {
+        if let fileURL {
+            self.fileURL = fileURL
+            return
+        }
+
         let baseDirectory = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        fileURL = baseDirectory
+        self.fileURL = baseDirectory
             .appendingPathComponent("VibeGesture", isDirectory: true)
             .appendingPathComponent("config.json")
     }

@@ -5,6 +5,7 @@ import SwiftUI
 final class SettingsWindowController {
     private let appState: AppState
     private let onOpenSystemSettings: () -> Void
+    var onConfigurationChange: (AppConfiguration) -> Void = { _ in }
     private var window: NSWindow?
 
     init(appState: AppState, onOpenSystemSettings: @escaping () -> Void) {
@@ -16,13 +17,14 @@ final class SettingsWindowController {
         if window == nil {
             let contentView = SettingsView(
                 appState: appState,
-                openSystemSettings: onOpenSystemSettings
+                openSystemSettings: onOpenSystemSettings,
+                onConfigurationChange: onConfigurationChange
             )
             let hostingController = NSHostingController(rootView: contentView)
             let newWindow = NSWindow(contentViewController: hostingController)
             newWindow.title = "VibeGesture Settings"
             newWindow.styleMask = [.titled, .closable, .miniaturizable]
-            newWindow.setContentSize(NSSize(width: 480, height: 320))
+            newWindow.setContentSize(NSSize(width: 560, height: 580))
             newWindow.isReleasedWhenClosed = false
             newWindow.center()
             newWindow.level = .normal

@@ -32,6 +32,9 @@ final class AppCoordinator: SafeShutdownHandling {
         foregroundAppGateMonitor.onStateChange = { [weak self] state in
             self?.handleForegroundAppGateChange(state)
         }
+        settingsWindowController.onConfigurationChange = { [weak self] configuration in
+            self?.updateConfiguration(configuration)
+        }
 
         cameraPipelineController.onStateChange = { [weak self] state in
             self?.appState.cameraPipelineState = state
@@ -113,6 +116,22 @@ final class AppCoordinator: SafeShutdownHandling {
 
         if !shouldEnable {
             performSafeShutdown(stopRecording: appState.isRecordingActive)
+        }
+    }
+
+    private func updateConfiguration(_ configuration: AppConfiguration) {
+        guard configuration.recordToggleShortcut.isSingleKey else {
+            print("Rejected configuration update: record toggle must be a single key")
+            return
+        }
+
+        appState.configuration = configuration
+        registerRecognitionHotKey()
+
+        do {
+            try configurationStore.save(configuration)
+        } catch {
+            print("Failed to save updated configuration: \(error)")
         }
     }
 
