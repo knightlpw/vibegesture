@@ -80,10 +80,12 @@ enum PermissionState: String, Codable, Equatable {
         switch self {
         case .ready:
             return "Open System Settings"
-        case .missingCamera, .missingBoth:
-            return "Open Camera Settings"
+        case .missingCamera:
+            return "Grant Camera Access"
+        case .missingBoth:
+            return "Grant Required Access"
         case .missingAccessibility:
-            return "Open Accessibility Settings"
+            return "Grant Accessibility Access"
         }
     }
 
@@ -92,9 +94,17 @@ enum PermissionState: String, Codable, Equatable {
         case .ready:
             return URL(string: "x-apple.systempreferences:")
         case .missingCamera, .missingBoth:
-            return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
+            return cameraSettingsURL
         case .missingAccessibility:
-            return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            return accessibilitySettingsURL
         }
+    }
+
+    var cameraSettingsURL: URL? {
+        URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
+    }
+
+    var accessibilitySettingsURL: URL? {
+        URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
     }
 }

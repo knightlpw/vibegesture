@@ -10,7 +10,14 @@ final class AppCoordinator: SafeShutdownHandling {
     private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
-    private let settingsWindowController: SettingsWindowController
+    private lazy var settingsWindowController: SettingsWindowController = {
+        SettingsWindowController(
+            appState: appState,
+            onPermissionAction: { [weak self] in
+                self?.handlePermissionGuidanceAction()
+            }
+        )
+    }()
     private let hotKeyManager: GlobalHotKeyManaging
     private var activationObserver: NSObjectProtocol?
 
@@ -25,16 +32,6 @@ final class AppCoordinator: SafeShutdownHandling {
         self.appState = appState
         self.cameraPipelineController = CameraPipelineController()
         self.statusItemController = StatusItemController(appState: appState)
-        self.settingsWindowController = SettingsWindowController(
-            appState: appState,
-            onOpenSystemSettings: { permissionState in
-                guard let url = permissionState.guidanceSettingsURL else {
-                    return
-                }
-
-                NSWorkspace.shared.open(url)
-            }
-        )
         keyboardDispatcher.onResultChange = { [weak self] result in
             self?.appState.latestKeyboardDispatchResult = result
         }
@@ -158,6 +155,81 @@ final class AppCoordinator: SafeShutdownHandling {
 
     private func showSettings() {
         settingsWindowController.showWindow()
+    }
+
+    private func handlePermissionGuidanceAction() {
+        let permissionState = appState.permissionState
+
+        switch permissionState {
+        case .ready:
+            openSystemSettings()
+
+        case .missingCamera:
+            requestCameraPermissionThenRefresh()
+
+        case .missingAccessibility:
+            requestAccessibilityPermissionThenRefresh()
+
+        case .missingBoth:
+            switch permissionManager.cameraAuthorizationStatus() {
+            case .notDetermined:
+                requestCameraPermissionThenRefresh(promptAccessibilityIfNeeded: true)
+            case .denied, .restricted:
+                openCameraSettings()
+            case .authorized:
+                requestAccessibilityPermissionThenRefresh()
+            @unknown default:
+                openCameraSettings()
+            }
+        }
+    }
+
+    private func requestCameraPermissionThenRefresh(promptAccessibilityIfNeeded: Bool = false) {
+        permissionManager.requestCameraAccess { [weak self] granted in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+
+                self.refreshPermissionState()
+
+                guard granted else {
+                    self.openCameraSettings()
+                    return
+                }
+
+                if promptAccessibilityIfNeeded, !self.appState.permissionState.isReady {
+                    self.requestAccessibilityPermissionThenRefresh()
+                }
+            }
+        }
+    }
+
+    private func requestAccessibilityPermissionThenRefresh() {
+        let didPrompt = permissionManager.promptAccessibilityAccess()
+        refreshPermissionState()
+
+        if !didPrompt, !appState.permissionState.isReady {
+            openAccessibilitySettings()
+        }
+    }
+
+    private func openSystemSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
+    }
+
+    private func openCameraSettings() {
+        guard let url = appState.permissionState.cameraSettingsURL else {
+            return
+        }
+
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openAccessibilitySettings() {
+        guard let url = appState.permissionState.accessibilitySettingsURL else {
+            return
+        }
+
+        NSWorkspace.shared.open(url)
     }
 
     private func terminate() {

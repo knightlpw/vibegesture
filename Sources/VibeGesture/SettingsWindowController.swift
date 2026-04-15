@@ -4,20 +4,20 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     private let appState: AppState
-    private let onOpenSystemSettings: (PermissionState) -> Void
+    private let onPermissionAction: () -> Void
     var onConfigurationChange: (AppConfiguration) -> Void = { _ in }
     private var window: NSWindow?
 
-    init(appState: AppState, onOpenSystemSettings: @escaping (PermissionState) -> Void) {
+    init(appState: AppState, onPermissionAction: @escaping () -> Void) {
         self.appState = appState
-        self.onOpenSystemSettings = onOpenSystemSettings
+        self.onPermissionAction = onPermissionAction
     }
 
     func showWindow() {
         if window == nil {
             let contentView = SettingsView(
                 appState: appState,
-                openSystemSettings: onOpenSystemSettings,
+                onPermissionAction: onPermissionAction,
                 onConfigurationChange: onConfigurationChange
             )
             let hostingController = NSHostingController(rootView: contentView)

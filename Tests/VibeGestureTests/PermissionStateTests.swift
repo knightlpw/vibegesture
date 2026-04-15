@@ -33,7 +33,7 @@ final class PermissionStateTests: XCTestCase {
     func testPermissionStateGuidanceTargetsMissingPermission() {
         XCTAssertEqual(
             PermissionState.missingCamera.guidanceButtonTitle,
-            "Open Camera Settings"
+            "Grant Camera Access"
         )
         XCTAssertEqual(
             PermissionState.missingCamera.guidanceSettingsURL?.absoluteString,
@@ -42,10 +42,18 @@ final class PermissionStateTests: XCTestCase {
 
         XCTAssertEqual(
             PermissionState.missingAccessibility.guidanceButtonTitle,
-            "Open Accessibility Settings"
+            "Grant Accessibility Access"
         )
         XCTAssertEqual(
             PermissionState.missingAccessibility.guidanceSettingsURL?.absoluteString,
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+        XCTAssertEqual(
+            PermissionState.missingBoth.cameraSettingsURL?.absoluteString,
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+        )
+        XCTAssertEqual(
+            PermissionState.missingBoth.accessibilitySettingsURL?.absoluteString,
             "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
         )
     }
