@@ -359,6 +359,8 @@ state machine 是唯一的主控制点。它可以读取 `permission_state` 和 
 2. 显示 `Cancelled`
 3. 进入 `cooldown`
 4. cooldown 结束后进入 `idle`
+5. 不通过 `record toggle` 作为 cancel 的前置动作
+6. `recordingActive` 的收束如果需要，只作为内部状态更新，不得改变对外动作序列
 
 #### 关闭识别 / 超时 / 权限丢失 / app gate 丢失
 条件：
@@ -558,8 +560,8 @@ V1 中，record toggle 快捷键仅允许单键。
 - cancel 在 submit 等待窗口内会抑制 Enter
 
 ### Cancel
-- 录音关闭时 cancel 会发送 Esc
-- 录音开启时 cancel 也会直接发送 Esc
+- cancel 直接发送 Esc，不依赖当前录音状态
+- cancel 不携带 `stopRecordingFirst` 语义；录音状态回收只属于 state machine 内部 bookkeeping
 
 ### App Gating
 - 支持的应用可以接受动作
