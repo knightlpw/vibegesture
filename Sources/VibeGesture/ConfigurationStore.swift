@@ -28,7 +28,12 @@ final class ConfigurationStore {
               let configuration = try? JSONDecoder().decode(AppConfiguration.self, from: data) else {
             return AppConfiguration.default
         }
-        return configuration
+
+        let normalized = configuration.normalizedForRuntime()
+        if normalized != configuration {
+            try? save(normalized)
+        }
+        return normalized
     }
 
     func save(_ configuration: AppConfiguration) throws {

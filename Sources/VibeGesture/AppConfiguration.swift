@@ -29,6 +29,16 @@ struct AppConfiguration: Codable, Equatable {
             displayName: "Esc"
         )
     )
+
+    func normalizedForRuntime() -> AppConfiguration {
+        guard recordToggleShortcut.isSingleKey else {
+            var normalized = self
+            normalized.recordToggleShortcut = Self.default.recordToggleShortcut
+            return normalized
+        }
+
+        return self
+    }
 }
 
 struct Shortcut: Codable, Equatable {

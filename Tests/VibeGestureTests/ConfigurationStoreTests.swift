@@ -49,4 +49,48 @@ final class ConfigurationStoreTests: XCTestCase {
 
         XCTAssertFalse(invalidShortcut.isSingleKey)
     }
+
+    func testConfigurationStoreNormalizesMissingRecordToggleKeyCode() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directory.appendingPathComponent("config.json")
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
+
+        let badJSON = """
+        {
+          "cancelShortcut" : {
+            "displayName" : "Esc",
+            "keyCode" : 53,
+            "modifiers" : 0
+          },
+          "globalRecognitionShortcut" : {
+            "displayName" : "⌥⇧G",
+            "keyCode" : 5,
+            "modifiers" : 2560
+          },
+          "recordToggleShortcut" : {
+            "displayName" : "Fn",
+            "modifiers" : 0
+          },
+          "submitShortcut" : {
+            "displayName" : "Enter",
+            "keyCode" : 36,
+            "modifiers" : 0
+          }
+        }
+        """
+
+        try badJSON.data(using: .utf8)?.write(to: fileURL)
+
+        let store = ConfigurationStore(fileURL: fileURL)
+        let loaded = store.load()
+
+        XCTAssertEqual(loaded.recordToggleShortcut, AppConfiguration.default.recordToggleShortcut)
+        let persisted = try Data(contentsOf: fileURL)
+        let reloaded = try JSONDecoder().decode(AppConfiguration.self, from: persisted)
+        XCTAssertEqual(reloaded.recordToggleShortcut, AppConfiguration.default.recordToggleShortcut)
+    }
 }
