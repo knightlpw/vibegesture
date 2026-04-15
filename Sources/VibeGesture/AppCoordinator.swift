@@ -144,11 +144,6 @@ final class AppCoordinator: SafeShutdownHandling {
     private func refreshPermissionState() {
         let cameraStatus = permissionManager.cameraAuthorizationStatus()
         let accessibilityTrusted = permissionManager.isAccessibilityTrusted()
-        let diagnostics = PermissionDiagnostics(
-            cameraAuthorizationStatus: cameraStatus,
-            accessibilityTrusted: accessibilityTrusted
-        )
-        appState.permissionDiagnostics = diagnostics
 
         let newState = PermissionState(
             cameraAuthorized: cameraStatus == .authorized,
@@ -158,8 +153,6 @@ final class AppCoordinator: SafeShutdownHandling {
 
         let transition = recognitionCoordinator.updatePermissionState(newState)
         applyRecognitionTransition(transition)
-
-        print("Permission diagnostics: \(diagnostics.summaryText)")
 
         if !newState.isReady {
             performSafeShutdown(stopRecording: appState.isRecordingActive)

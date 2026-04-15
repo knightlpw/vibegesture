@@ -167,14 +167,6 @@ struct SettingsView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 settingRow(title: "Permission state", value: appState.permissionState.displayName)
-                settingRow(
-                    title: "Live camera auth",
-                    value: appState.permissionDiagnostics.cameraAuthorizationStatusDisplayName
-                )
-                settingRow(
-                    title: "Live Accessibility trust",
-                    value: appState.permissionDiagnostics.accessibilityTrustedDisplayName
-                )
 
                 if appState.permissionState.isReady {
                     Text(appState.permissionState.guidanceMessage)
@@ -190,10 +182,6 @@ struct SettingsView: View {
                     }
                     Text(appState.permissionState.guidanceMessage)
                         .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    Text(appState.permissionDiagnostics.summaryText)
-                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     Button(appState.permissionState.guidanceButtonTitle) {

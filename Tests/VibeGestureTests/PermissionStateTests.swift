@@ -16,20 +16,6 @@ private struct StubPermissionChecker: PermissionChecking {
 }
 
 final class PermissionStateTests: XCTestCase {
-    func testPermissionDiagnosticsSummariesLiveChecks() {
-        let diagnostics = PermissionDiagnostics(
-            cameraAuthorizationStatus: .authorized,
-            accessibilityTrusted: true
-        )
-
-        XCTAssertEqual(diagnostics.cameraAuthorizationStatusDisplayName, "Authorized")
-        XCTAssertEqual(diagnostics.accessibilityTrustedDisplayName, "Trusted")
-        XCTAssertEqual(
-            diagnostics.summaryText,
-            "Camera: Authorized, Accessibility: Trusted"
-        )
-    }
-
     func testPermissionStateClassification() {
         XCTAssertEqual(PermissionState(cameraAuthorized: true, accessibilityTrusted: true), .ready)
         XCTAssertEqual(PermissionState(cameraAuthorized: false, accessibilityTrusted: true), .missingCamera)

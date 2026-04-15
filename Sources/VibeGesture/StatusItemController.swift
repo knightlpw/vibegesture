@@ -97,22 +97,6 @@ final class StatusItemController: NSObject {
         permissionItem.isEnabled = false
         menu.addItem(permissionItem)
 
-        let liveCameraItem = NSMenuItem(
-            title: "Live Camera: \(appState.permissionDiagnostics.cameraAuthorizationStatusDisplayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
-        liveCameraItem.isEnabled = false
-        menu.addItem(liveCameraItem)
-
-        let liveAccessibilityItem = NSMenuItem(
-            title: "Live AX: \(appState.permissionDiagnostics.accessibilityTrustedDisplayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
-        liveAccessibilityItem.isEnabled = false
-        menu.addItem(liveAccessibilityItem)
-
         let pipelineItem = NSMenuItem(
             title: "Camera: \(appState.cameraPipelineState.displayName)",
             action: nil,

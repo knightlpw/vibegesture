@@ -15,10 +15,6 @@ final class AppState {
         didSet { notifyChange() }
     }
 
-    var permissionDiagnostics: PermissionDiagnostics {
-        didSet { notifyChange() }
-    }
-
     var cameraPipelineState: CameraPipelineState {
         didSet { notifyChange() }
     }
@@ -55,10 +51,6 @@ final class AppState {
         self.configuration = configuration
         self.recognitionState = .disabled
         self.permissionState = .missingBoth
-        self.permissionDiagnostics = PermissionDiagnostics(
-            cameraAuthorizationStatus: .notDetermined,
-            accessibilityTrusted: false
-        )
         self.cameraPipelineState = .stopped
         self.latestCameraFrameObservation = nil
         self.latestGestureInterpretation = nil
