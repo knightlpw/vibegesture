@@ -68,15 +68,33 @@ enum PermissionState: String, Codable, Equatable {
         case .ready:
             return "All required permissions are available."
         case .missingCamera:
-            return "Grant Camera access in System Settings to enable recognition."
+            return "Grant Camera access in System Settings > Privacy & Security > Camera to enable recognition."
         case .missingAccessibility:
-            return "Grant Accessibility access in System Settings to allow keyboard actions later."
+            return "Grant Accessibility access in System Settings > Privacy & Security > Accessibility to allow keyboard actions later."
         case .missingBoth:
-            return "Grant Camera and Accessibility access in System Settings before recognition can run."
+            return "Grant Camera access first, then Accessibility access in System Settings > Privacy & Security before recognition can run."
         }
     }
 
     var guidanceButtonTitle: String {
-        "Open System Settings"
+        switch self {
+        case .ready:
+            return "Open System Settings"
+        case .missingCamera, .missingBoth:
+            return "Open Camera Settings"
+        case .missingAccessibility:
+            return "Open Accessibility Settings"
+        }
+    }
+
+    var guidanceSettingsURL: URL? {
+        switch self {
+        case .ready:
+            return URL(string: "x-apple.systempreferences:")
+        case .missingCamera, .missingBoth:
+            return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera")
+        case .missingAccessibility:
+            return URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+        }
     }
 }

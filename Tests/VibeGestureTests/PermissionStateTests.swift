@@ -30,6 +30,26 @@ final class PermissionStateTests: XCTestCase {
         XCTAssertTrue(PermissionState.ready.missingKinds.isEmpty)
     }
 
+    func testPermissionStateGuidanceTargetsMissingPermission() {
+        XCTAssertEqual(
+            PermissionState.missingCamera.guidanceButtonTitle,
+            "Open Camera Settings"
+        )
+        XCTAssertEqual(
+            PermissionState.missingCamera.guidanceSettingsURL?.absoluteString,
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"
+        )
+
+        XCTAssertEqual(
+            PermissionState.missingAccessibility.guidanceButtonTitle,
+            "Open Accessibility Settings"
+        )
+        XCTAssertEqual(
+            PermissionState.missingAccessibility.guidanceSettingsURL?.absoluteString,
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        )
+    }
+
     func testPermissionManagerUsesCheckerOutput() {
         let manager = PermissionManager(
             checker: StubPermissionChecker(

@@ -4,11 +4,11 @@ import SwiftUI
 @MainActor
 final class SettingsWindowController {
     private let appState: AppState
-    private let onOpenSystemSettings: () -> Void
+    private let onOpenSystemSettings: (PermissionState) -> Void
     var onConfigurationChange: (AppConfiguration) -> Void = { _ in }
     private var window: NSWindow?
 
-    init(appState: AppState, onOpenSystemSettings: @escaping () -> Void) {
+    init(appState: AppState, onOpenSystemSettings: @escaping (PermissionState) -> Void) {
         self.appState = appState
         self.onOpenSystemSettings = onOpenSystemSettings
     }

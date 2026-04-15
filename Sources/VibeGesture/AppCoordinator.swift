@@ -27,8 +27,12 @@ final class AppCoordinator: SafeShutdownHandling {
         self.statusItemController = StatusItemController(appState: appState)
         self.settingsWindowController = SettingsWindowController(
             appState: appState,
-            onOpenSystemSettings: {
-                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:")!)
+            onOpenSystemSettings: { permissionState in
+                guard let url = permissionState.guidanceSettingsURL else {
+                    return
+                }
+
+                NSWorkspace.shared.open(url)
             }
         )
         keyboardDispatcher.onResultChange = { [weak self] result in

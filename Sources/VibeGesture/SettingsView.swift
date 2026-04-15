@@ -11,7 +11,7 @@ struct SettingsView: View {
     }
 
     @Bindable var appState: AppState
-    let openSystemSettings: () -> Void
+    let openSystemSettings: (PermissionState) -> Void
     let onConfigurationChange: (AppConfiguration) -> Void
 
     @State private var activeShortcutField: EditableShortcutField?
@@ -185,7 +185,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     Button(appState.permissionState.guidanceButtonTitle) {
-                        openSystemSettings()
+                        openSystemSettings(appState.permissionState)
                     }
                 }
             }
