@@ -39,6 +39,7 @@
 因此 roadmap 的目标是把“已完成的前置能力”继续串成后续可执行阶段，而不是重新从 shell、权限、手势解释、键盘发射、前台应用 gating 或稳定化收尾开始。
 
 2026-04-15 这一阶段已完成最小 app bundle 包装与 app icon 落地，后续任务应围绕 bundle 启动验证与权限复验进行 reviewer 级验收。
+2026-04-15 继续新增后续阶段 10：runtime feedback 与 gesture robustness，聚焦菜单栏实时刷新、gesture 展示、cancel 时序和 record / submit 误触率。
 
 ---
 
@@ -348,7 +349,39 @@
 
 ---
 
-## 14. 阶段间依赖图
+## 14. 阶段 10：Runtime Feedback 与 gesture robustness
+
+### 目标
+把菜单栏状态刷新、姿态展示、cancel 时序和 record / submit 误触率收紧到更适合真实验收的水平。
+
+### 主要内容
+- 菜单栏状态实时刷新
+- gesture / action 展示拆分与文案可读性
+- cancel 时序以 Esc 为优先，避免录音路径扰动
+- record / submit 的几何判定与阈值微调
+- 针对误触与时序的回归测试补强
+
+### 依赖
+- 依赖阶段 4 的 gesture 解释
+- 依赖阶段 5 的键盘发射与安全时序
+- 依赖阶段 8 的稳定化验证基础
+- 建议在阶段 9 的 bundle 启动路径上继续验收
+
+### 退出条件
+- 菜单栏状态在打开期间能跟随最新 AppState 更新
+- gesture 展示能清楚区分当前候选、当前姿态和最近动作
+- cancel 在录音路径里优先把 Esc 送出去，不依赖外部录音状态回读
+- record / submit 的误触率明显下降
+- 有对应回归测试覆盖这些边界
+
+### 风险提示
+- 不要引入外部录音状态探测
+- 不要把展示层和动作层重新耦合
+- 不要顺手增加新手势或新设置项
+
+---
+
+## 15. 阶段间依赖图
 
 ```mermaid
 flowchart LR
@@ -363,11 +396,12 @@ flowchart LR
   E --> H
   F --> H
   H --> I["9. App Bundle + app identity"]
+  I --> J["10. Runtime Feedback + gesture robustness"]
 ```
 
 ---
 
-## 15. 完成判定
+## 16. 完成判定
 
 当且仅当以下条件全部满足时，V1 roadmap 才算走完：
 
@@ -383,10 +417,11 @@ flowchart LR
 10. 配置可持久化
 11. 端到端流程能在支持应用里稳定使用
 12. 应用以独立 macOS app bundle 形式运行，权限和系统设置绑定到 VibeGesture 自身而不是 Terminal
+13. 菜单栏反馈和手势误触稳定性达到可接受水平
 
 ---
 
-## 16. 给后续 coder agent 的提示
+## 17. 给后续 coder agent 的提示
 
 后续任务应该严格按照阶段顺序推进。
 
