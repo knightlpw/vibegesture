@@ -38,6 +38,8 @@
 此外，当前还存在一个新的后续阶段 9：把 SwiftPM executable 壳层收束成真正的 macOS app bundle / app identity，以便权限能正确归属到 VibeGesture 自身。  
 因此 roadmap 的目标是把“已完成的前置能力”继续串成后续可执行阶段，而不是重新从 shell、权限、手势解释、键盘发射、前台应用 gating 或稳定化收尾开始。
 
+2026-04-15 这一阶段已完成最小 app bundle 包装与 app icon 落地，后续任务应围绕 bundle 启动验证与权限复验进行 reviewer 级验收。
+
 ---
 
 ## 3. 规划原则
