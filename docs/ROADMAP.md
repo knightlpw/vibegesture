@@ -35,6 +35,7 @@
 - 阶段 8：稳定化、调优与端到端验证
 
 当前实现已经从纯设计阶段进入实现阶段，并且已经完成到阶段 8。  
+此外，当前还存在一个新的后续阶段 9：把 SwiftPM executable 壳层收束成真正的 macOS app bundle / app identity，以便权限能正确归属到 VibeGesture 自身。  
 因此 roadmap 的目标是把“已完成的前置能力”继续串成后续可执行阶段，而不是重新从 shell、权限、手势解释、键盘发射、前台应用 gating 或稳定化收尾开始。
 
 ---
@@ -318,7 +319,34 @@
 
 ---
 
-## 13. 阶段间依赖图
+## 13. 阶段 9：App Bundle 与 app identity
+
+### 目标
+把当前 SwiftPM executable 壳层收束成真正的 macOS app bundle，使 Camera / Accessibility 权限和系统设置都绑定到 VibeGesture 自身，而不是 Terminal。
+
+### 主要内容
+- 最小 macOS app bundle wrapper
+- 稳定的 bundle identifier
+- Info.plist / app identity
+- 本地 launch path 从 raw executable 切换到 bundle
+- 权限读取、请求和系统设置入口在 bundle 身份下复验
+
+### 依赖
+- 依赖阶段 1 到阶段 8 的现有应用逻辑
+
+### 退出条件
+- 应用可以作为独立 `.app` bundle 启动
+- System Settings 里 Camera / Accessibility 的授权目标显示为 VibeGesture，而不是 Terminal
+- `PermissionManager.refresh()` 在给 bundle 授权后能读回正确状态
+- 现有菜单栏、摄像头、gesture、keyboard 和 gate 行为不回退
+
+### 风险提示
+- 不要改手势语义、键盘时序或 gate 规则
+- 不要顺手扩大到正式签名 / 公证 / 分发流水线，除非这是实现 bundle identity 所必需的最小步骤
+
+---
+
+## 14. 阶段间依赖图
 
 ```mermaid
 flowchart LR
@@ -332,11 +360,12 @@ flowchart LR
   G --> H["8. Stabilization"]
   E --> H
   F --> H
+  H --> I["9. App Bundle + app identity"]
 ```
 
 ---
 
-## 14. 完成判定
+## 15. 完成判定
 
 当且仅当以下条件全部满足时，V1 roadmap 才算走完：
 
@@ -351,10 +380,11 @@ flowchart LR
 9. overlay 与菜单栏反馈清晰
 10. 配置可持久化
 11. 端到端流程能在支持应用里稳定使用
+12. 应用以独立 macOS app bundle 形式运行，权限和系统设置绑定到 VibeGesture 自身而不是 Terminal
 
 ---
 
-## 15. 给后续 coder agent 的提示
+## 16. 给后续 coder agent 的提示
 
 后续任务应该严格按照阶段顺序推进。
 
