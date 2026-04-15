@@ -134,6 +134,9 @@ printf 'APPL????' > "$APP_BUNDLE/Contents/PkgInfo"
 
 plutil -lint "$APP_BUNDLE/Contents/Info.plist" >/dev/null
 
+codesign --force --deep --sign - "$APP_BUNDLE" >/dev/null
+codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE" >/dev/null
+
 echo "Bundle created at: $APP_BUNDLE"
 echo "Bundle identifier: $BUNDLE_IDENTIFIER"
 echo "Icon installed at: $ICNS_PATH"
