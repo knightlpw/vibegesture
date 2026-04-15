@@ -23,7 +23,6 @@ enum KeyboardDispatchResult: Equatable {
     case sent(action: KeyboardAction, timestamp: Date)
     case waitingForSubmit(delay: TimeInterval, fireAt: Date)
     case cancelledPendingSubmit(timestamp: Date)
-    case interruptedPendingSubmitWithCancel(timestamp: Date)
     case safeShutdown(stopRecording: Bool, timestamp: Date)
     case failed(action: KeyboardAction, reason: String, timestamp: Date)
 
@@ -38,8 +37,6 @@ enum KeyboardDispatchResult: Equatable {
             return "Waiting \(delayMillis) ms for submit"
         case .cancelledPendingSubmit:
             return "Cancelled pending submit"
-        case .interruptedPendingSubmitWithCancel:
-            return "Cancelled pending submit · Sent cancel"
         case .safeShutdown(let stopRecording, _):
             return stopRecording ? "Safe shutdown · stopped recording" : "Safe shutdown"
         case .failed(let action, let reason, _):
@@ -152,23 +149,9 @@ final class KeyboardDispatcher {
             } else {
                 sendTap(shortcut: configuration.submitShortcut, action: .submit)
             }
-        case .cancel(let stopRecordingFirst):
-            let hadPendingSubmit = discardPendingSubmit()
-
-            if stopRecordingFirst {
-                guard sendTap(shortcut: configuration.recordToggleShortcut, action: .recordToggle) else {
-                    return
-                }
-            }
-
-            if hadPendingSubmit {
-                guard sendTap(shortcut: configuration.cancelShortcut, action: .cancel) else {
-                    return
-                }
-                latestResult = .interruptedPendingSubmitWithCancel(timestamp: Date())
-            } else {
-                sendTap(shortcut: configuration.cancelShortcut, action: .cancel)
-            }
+        case .cancel:
+            discardPendingSubmit()
+            sendTap(shortcut: configuration.cancelShortcut, action: .cancel)
         }
     }
 

@@ -44,15 +44,12 @@ final class KeyboardDispatcherTests: XCTestCase {
         XCTAssertTrue(dispatcher.hasPendingSubmit)
 
         dispatcher.dispatch(
-            intent: .cancel(stopRecordingFirst: false),
+            intent: .cancel,
             configuration: .default
         )
 
         XCTAssertEqual(poster.tappedShortcuts.map(\.displayName), ["Fn", "Esc"])
-        XCTAssertEqual(
-            dispatcher.latestResult.displayName,
-            "Cancelled pending submit · Sent cancel"
-        )
+        XCTAssertEqual(dispatcher.latestResult.displayName, "Sent cancel")
 
         try await Task.sleep(nanoseconds: 90_000_000)
 

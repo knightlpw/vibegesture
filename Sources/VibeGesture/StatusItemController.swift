@@ -8,6 +8,20 @@ final class StatusItemController: NSObject {
 
     private let appState: AppState
     private var statusItem: NSStatusItem?
+    private let menu = NSMenu(title: "VibeGesture")
+    private let stateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let gestureCandidateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let gesturePoseItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let actionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let recordingItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let gateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let keyboardItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let permissionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let pipelineItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let toggleItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let settingsItem = NSMenuItem(title: "", action: nil, keyEquivalent: ",")
+    private let quitItem = NSMenuItem(title: "", action: nil, keyEquivalent: "q")
+    private var menuConfigured = false
 
     init(appState: AppState) {
         self.appState = appState
@@ -28,112 +42,90 @@ final class StatusItemController: NSObject {
         item.button?.imagePosition = .imageOnly
         item.button?.toolTip = "VibeGesture"
         statusItem = item
+
+        configureMenuIfNeeded()
+        item.menu = menu
         refresh()
+    }
+
+    func menuSnapshot() -> [String] {
+        [
+            "State: \(appState.recognitionState.displayName)",
+            "Gesture candidate: \(gestureCandidateTitle())",
+            "Gesture pose: \(gesturePoseTitle())",
+            "Recent action: \(appState.latestRecognitionActionIntent.displayName)",
+            "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")",
+            "Gate: \(appState.foregroundAppGateState.displayName)",
+            "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
+            "Permissions: \(appState.permissionState.displayName)",
+            "Camera: \(appState.cameraPipelineState.displayName)",
+            recognitionToggleTitle(),
+            "Settings…",
+            "Quit VibeGesture"
+        ]
     }
 
     private func refresh() {
         guard let statusItem else { return }
 
+        configureMenuIfNeeded()
+        updateMenuTitles()
         statusItem.button?.image = statusImage()
-        statusItem.menu = buildMenu()
     }
 
-    private func buildMenu() -> NSMenu {
-        let menu = NSMenu(title: "VibeGesture")
+    private func configureMenuIfNeeded() {
+        guard !menuConfigured else { return }
 
-        let stateItem = NSMenuItem(
-            title: "State: \(appState.recognitionState.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
+        menu.autoenablesItems = false
+
         stateItem.isEnabled = false
-        menu.addItem(stateItem)
-
-        let gestureItem = NSMenuItem(
-            title: "Gesture: \(latestGestureTitle())",
-            action: nil,
-            keyEquivalent: ""
-        )
-        gestureItem.isEnabled = false
-        menu.addItem(gestureItem)
-
-        let actionItem = NSMenuItem(
-            title: "Action: \(appState.latestRecognitionActionIntent.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
+        gestureCandidateItem.isEnabled = false
+        gesturePoseItem.isEnabled = false
         actionItem.isEnabled = false
-        menu.addItem(actionItem)
-
-        let recordingItem = NSMenuItem(
-            title: "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")",
-            action: nil,
-            keyEquivalent: ""
-        )
         recordingItem.isEnabled = false
-        menu.addItem(recordingItem)
-
-        let gateItem = NSMenuItem(
-            title: "Gate: \(appState.foregroundAppGateState.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
         gateItem.isEnabled = false
-        menu.addItem(gateItem)
-
-        let keyboardItem = NSMenuItem(
-            title: "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
         keyboardItem.isEnabled = false
-        menu.addItem(keyboardItem)
-
-        let permissionItem = NSMenuItem(
-            title: "Permissions: \(appState.permissionState.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
         permissionItem.isEnabled = false
-        menu.addItem(permissionItem)
-
-        let pipelineItem = NSMenuItem(
-            title: "Camera: \(appState.cameraPipelineState.displayName)",
-            action: nil,
-            keyEquivalent: ""
-        )
         pipelineItem.isEnabled = false
-        menu.addItem(pipelineItem)
 
-        let toggleItem = NSMenuItem(
-            title: recognitionToggleTitle(),
-            action: #selector(handleToggleRecognition(_:)),
-            keyEquivalent: ""
-        )
+        toggleItem.action = #selector(handleToggleRecognition(_:))
         toggleItem.target = self
-        menu.addItem(toggleItem)
-
-        menu.addItem(.separator())
-
-        let settingsItem = NSMenuItem(
-            title: "Settings…",
-            action: #selector(handleOpenSettings(_:)),
-            keyEquivalent: ","
-        )
+        settingsItem.action = #selector(handleOpenSettings(_:))
         settingsItem.target = self
-        menu.addItem(settingsItem)
-
-        menu.addItem(.separator())
-
-        let quitItem = NSMenuItem(
-            title: "Quit VibeGesture",
-            action: #selector(handleQuit(_:)),
-            keyEquivalent: "q"
-        )
+        quitItem.action = #selector(handleQuit(_:))
         quitItem.target = self
+
+        menu.addItem(stateItem)
+        menu.addItem(gestureCandidateItem)
+        menu.addItem(gesturePoseItem)
+        menu.addItem(actionItem)
+        menu.addItem(recordingItem)
+        menu.addItem(gateItem)
+        menu.addItem(keyboardItem)
+        menu.addItem(permissionItem)
+        menu.addItem(pipelineItem)
+        menu.addItem(toggleItem)
+        menu.addItem(.separator())
+        menu.addItem(settingsItem)
+        menu.addItem(.separator())
         menu.addItem(quitItem)
 
-        return menu
+        menuConfigured = true
+    }
+
+    private func updateMenuTitles() {
+        stateItem.title = "State: \(appState.recognitionState.displayName)"
+        gestureCandidateItem.title = "Gesture candidate: \(gestureCandidateTitle())"
+        gesturePoseItem.title = "Gesture pose: \(gesturePoseTitle())"
+        actionItem.title = "Recent action: \(appState.latestRecognitionActionIntent.displayName)"
+        recordingItem.title = "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")"
+        gateItem.title = "Gate: \(appState.foregroundAppGateState.displayName)"
+        keyboardItem.title = "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)"
+        permissionItem.title = "Permissions: \(appState.permissionState.displayName)"
+        pipelineItem.title = "Camera: \(appState.cameraPipelineState.displayName)"
+        toggleItem.title = recognitionToggleTitle()
+        settingsItem.title = "Settings…"
+        quitItem.title = "Quit VibeGesture"
     }
 
     private func statusImage() -> NSImage? {
@@ -157,8 +149,12 @@ final class StatusItemController: NSObject {
         return appState.recognitionState.toggleMenuTitle
     }
 
-    private func latestGestureTitle() -> String {
-        appState.latestGestureInterpretation?.displayText ?? "Waiting for a stable gesture"
+    private func gestureCandidateTitle() -> String {
+        appState.latestGestureInterpretation?.candidateDisplayName ?? "Waiting for a stable gesture"
+    }
+
+    private func gesturePoseTitle() -> String {
+        appState.latestGestureInterpretation?.poseSummary ?? "Waiting for a stable gesture"
     }
 
     @objc private func handleToggleRecognition(_ sender: Any?) {

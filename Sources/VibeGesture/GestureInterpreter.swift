@@ -176,7 +176,7 @@ final class GestureInterpreter: GestureInterpreting {
         )
 
         let thumbIndexContactDistance = distance(thumbTip, indexTip) / handSpan
-        let thumbIndexContactThreshold = 0.28
+        let thumbIndexContactThreshold = 0.22
         let thumbIndexContacted = thumbIndexContactDistance <= thumbIndexContactThreshold
 
         let indexExtended = isExtended(tip: indexTip, joint: indexPIP, wrist: wrist)
@@ -186,11 +186,13 @@ final class GestureInterpreter: GestureInterpreting {
         let thumbExtended = isExtended(tip: thumbTip, joint: thumbIP, wrist: wrist)
 
         let isRecordPose = thumbIndexContacted
+            && indexExtended
             && !middleExtended
             && !ringExtended
             && !littleExtended
 
         let isSubmitPose = thumbIndexContacted
+            && indexExtended
             && middleExtended
             && ringExtended
             && littleExtended
@@ -208,9 +210,10 @@ final class GestureInterpreter: GestureInterpreting {
             ringExtended ? 0 : 1,
             littleExtended ? 0 : 1
         ])
-        let recordConfidence = average([thumbIndexContactScore, curledScore])
+        let recordConfidence = average([thumbIndexContactScore, indexExtended ? 1 : 0, curledScore])
         let submitConfidence = average([
             thumbIndexContactScore,
+            indexExtended ? 1 : 0,
             middleExtended ? 1 : 0,
             ringExtended ? 1 : 0,
             littleExtended ? 1 : 0

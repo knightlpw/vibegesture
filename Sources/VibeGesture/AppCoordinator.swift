@@ -273,12 +273,6 @@ final class AppCoordinator: SafeShutdownHandling {
                 intent: transition.actionIntent,
                 configuration: appState.configuration
             )
-        } else if transition.gestureInterpretation?.candidate == .cancelStarted,
-                  keyboardDispatcher.hasPendingSubmit {
-            keyboardDispatcher.dispatch(
-                intent: .cancel(stopRecordingFirst: false),
-                configuration: appState.configuration
-            )
         }
 
         appState.isRecordingActive = transition.recordingActive

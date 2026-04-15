@@ -78,6 +78,22 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertEqual(cancelRepeat.candidate, .noAction)
     }
 
+    func testGestureInterpreterRejectsBorderlineRecordLikePose() {
+        let interpreter = GestureInterpreter()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 2_250)
+
+        let borderlineResults = (0..<6).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .borderlineRecord,
+                    timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(borderlineResults.map(\.candidate), Array(repeating: .noAction, count: 6))
+    }
+
     func testGestureInterpreterRejectsLegacyCancelLikePose() {
         let interpreter = GestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_500)
@@ -219,6 +235,37 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertTrue(permissionRecovered.shouldStartCamera)
     }
 
+    func testRecognitionStateMachineEmitsDirectCancelAndStopsRecordingInternally() {
+        var machine = RecognitionStateMachine()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 4_250)
+
+        let gateSupported = machine.updateForegroundAppGate(
+            true,
+            permissionState: .ready,
+            timestamp: baseTime
+        )
+        XCTAssertEqual(gateSupported.state, .disabled)
+
+        let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
+        XCTAssertEqual(enable.state, .idle)
+
+        machine.setRecordingActive(true)
+
+        let cancelStarted = machine.process(
+            gestureInterpretation: GestureInterpretation(
+                timestamp: baseTime.addingTimeInterval(0.1),
+                candidate: .cancelStarted,
+                confidence: 1.0,
+                summary: "Cancel pose stabilized"
+            )
+        )
+
+        XCTAssertEqual(cancelStarted.state, .cooldown)
+        XCTAssertEqual(cancelStarted.actionIntent, .cancel)
+        XCTAssertFalse(cancelStarted.recordingActive)
+        XCTAssertEqual(machine.latestActionIntent, .cancel)
+    }
+
     func testForegroundAppGatePolicyClassifiesSupportedAndUnsupportedApps() {
         let codex = ForegroundAppGatePolicy.classify(
             bundleIdentifier: "com.openai.codex",
@@ -300,6 +347,7 @@ final class GestureRecognitionTests: XCTestCase {
         case submit
         case cancel
         case legacyCancel
+        case borderlineRecord
     }
 
     private func makeFrameObservation(
@@ -367,6 +415,12 @@ final class GestureRecognitionTests: XCTestCase {
             middleTip = landmark(0.625, 0.860)
             ringTip = landmark(0.650, 0.350)
             littleTip = landmark(0.700, 0.340)
+        case .borderlineRecord:
+            thumbTip = landmark(0.560, 0.495)
+            indexTip = landmark(0.610, 0.520)
+            middleTip = landmark(0.605, 0.355)
+            ringTip = landmark(0.655, 0.350)
+            littleTip = landmark(0.705, 0.345)
         }
 
         return HandPoseObservation(

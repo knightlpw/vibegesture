@@ -50,13 +50,21 @@ struct GestureInterpretation: Equatable {
     var displayText: String {
         "\(candidate.displayName) · \(summary)"
     }
+
+    var candidateDisplayName: String {
+        candidate.displayName
+    }
+
+    var poseSummary: String {
+        summary
+    }
 }
 
 enum RecognitionActionIntent: Equatable {
     case none
     case toggleRecording
     case submit(stopRecordingFirst: Bool, postStopDelay: TimeInterval)
-    case cancel(stopRecordingFirst: Bool)
+    case cancel
 
     var displayName: String {
         switch self {
@@ -70,10 +78,7 @@ enum RecognitionActionIntent: Equatable {
                 return "Submit · stop first · \(delayMillis) ms delay"
             }
             return "Submit"
-        case .cancel(let stopRecordingFirst):
-            if stopRecordingFirst {
-                return "Cancel · stop first"
-            }
+        case .cancel:
             return "Cancel"
         }
     }

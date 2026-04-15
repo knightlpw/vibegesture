@@ -129,8 +129,7 @@ struct RecognitionStateMachine {
             cooldownReturnState = .idle
             state = .cooldown
         case .cancelStarted:
-            let stopRecordingFirst = recordingActive
-            actionIntent = .cancel(stopRecordingFirst: stopRecordingFirst)
+            actionIntent = .cancel
             recordingActive = false
             cooldownDeadline = gestureInterpretation.timestamp.addingTimeInterval(Self.cooldownDuration)
             cooldownReturnState = .idle
