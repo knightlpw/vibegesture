@@ -88,7 +88,7 @@ app gate 应被视作独立的放行 / 拒绝条件，而不是 recognition stat
 | --- | --- | --- | --- |
 | Record | 右手拇指和食指捏合，其他三指握拳 | `Fn` 单击 | 录音开 / 关切换 |
 | Submit | 右手呈 `OK` 状，拇指和食指捏合，其他三指张开 | `Enter` 单击 | 录音开启时先停录，再延迟后发送 Enter |
-| Cancel | 右手手掌张开，掌心面对摄像头 | `Esc` 单击 | 录音开启时先停录，再发送 Esc |
+| Cancel | 右手手掌张开，掌心面对摄像头 | `Esc` 单击 | 直接发送 Esc |
 
 `Record` / `Submit` / `Cancel` 是 V1 唯一需要作为产品语义对待的动作手势。  
 所有更细的 Vision 关键点与阈值规则，只是为了稳定识别这三种动作。
@@ -350,22 +350,9 @@ state machine 是唯一的主控制点。它可以读取 `permission_state` 和 
 5. 进入 `cooldown`
 6. cooldown 结束后进入 `idle`
 
-#### 录音开启时的 Cancel
+#### Cancel
 条件：
 - gesture interpreter 发出 `cancel_started`
-- 当前录音开启
-
-动作：
-1. 单击一次 record toggle 键，停止录音
-2. 发射 cancel 键
-3. 显示 `Cancelled`
-4. 进入 `cooldown`
-5. cooldown 结束后进入 `idle`
-
-#### 录音关闭时的 Cancel
-条件：
-- gesture interpreter 发出 `cancel_started`
-- 当前录音关闭
 
 动作：
 1. 发射 cancel 键
@@ -572,7 +559,7 @@ V1 中，record toggle 快捷键仅允许单键。
 
 ### Cancel
 - 录音关闭时 cancel 会发送 Esc
-- 录音开启时 cancel 会先停止录音，再发送 Esc
+- 录音开启时 cancel 也会直接发送 Esc
 
 ### App Gating
 - 支持的应用可以接受动作
