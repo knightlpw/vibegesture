@@ -78,6 +78,22 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertEqual(cancelRepeat.candidate, .noAction)
     }
 
+    func testGestureInterpreterRejectsLegacyCancelLikePose() {
+        let interpreter = GestureInterpreter()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 2_500)
+
+        let legacyCancelResults = (0..<3).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .legacyCancel,
+                    timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(legacyCancelResults.map(\.candidate), Array(repeating: .noAction, count: 3))
+    }
+
     func testRecognitionStateMachineTransitionsThroughCooldown() {
         var machine = RecognitionStateMachine()
         let baseTime = Date(timeIntervalSinceReferenceDate: 3_000)
@@ -283,6 +299,7 @@ final class GestureRecognitionTests: XCTestCase {
         case record
         case submit
         case cancel
+        case legacyCancel
     }
 
     private func makeFrameObservation(
@@ -333,12 +350,18 @@ final class GestureRecognitionTests: XCTestCase {
             ringTip = landmark(0.655, 0.350)
             littleTip = landmark(0.705, 0.345)
         case .submit:
-            thumbTip = landmark(0.360, 0.570)
-            indexTip = landmark(0.575, 0.840)
+            thumbTip = landmark(0.565, 0.495)
+            indexTip = landmark(0.575, 0.500)
             middleTip = landmark(0.625, 0.860)
             ringTip = landmark(0.675, 0.845)
             littleTip = landmark(0.725, 0.830)
         case .cancel:
+            thumbTip = landmark(0.315, 0.615)
+            indexTip = landmark(0.520, 0.870)
+            middleTip = landmark(0.620, 0.880)
+            ringTip = landmark(0.720, 0.865)
+            littleTip = landmark(0.815, 0.840)
+        case .legacyCancel:
             thumbTip = landmark(0.360, 0.570)
             indexTip = landmark(0.575, 0.840)
             middleTip = landmark(0.625, 0.860)

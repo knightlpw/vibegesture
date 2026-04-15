@@ -175,9 +175,9 @@ final class GestureInterpreter: GestureInterpreting {
             0.0001
         )
 
-        let recordDistance = distance(thumbTip, indexTip) / handSpan
-        let recordThreshold = 0.28
-        let isRecordPose = recordDistance <= recordThreshold
+        let thumbIndexContactDistance = distance(thumbTip, indexTip) / handSpan
+        let thumbIndexContactThreshold = 0.28
+        let thumbIndexContacted = thumbIndexContactDistance <= thumbIndexContactThreshold
 
         let indexExtended = isExtended(tip: indexTip, joint: indexPIP, wrist: wrist)
         let middleExtended = isExtended(tip: middleTip, joint: middlePIP, wrist: wrist)
@@ -185,28 +185,45 @@ final class GestureInterpreter: GestureInterpreting {
         let littleExtended = isExtended(tip: littleTip, joint: littlePIP, wrist: wrist)
         let thumbExtended = isExtended(tip: thumbTip, joint: thumbIP, wrist: wrist)
 
-        let extendedFingerCount = [
-            indexExtended,
-            middleExtended,
-            ringExtended,
-            littleExtended,
-            thumbExtended
-        ].filter { $0 }.count
-
-        let isCancelPose = !isRecordPose
-            && indexExtended
-            && middleExtended
+        let isRecordPose = thumbIndexContacted
+            && !middleExtended
             && !ringExtended
             && !littleExtended
 
-        let isSubmitPose = !isRecordPose && extendedFingerCount >= 4
+        let isSubmitPose = thumbIndexContacted
+            && middleExtended
+            && ringExtended
+            && littleExtended
 
-        let recordConfidence = min(1, max(0, 1 - (recordDistance / recordThreshold)))
-        let candidateConfidence = max(
-            isCancelPose ? 0.92 : 0,
-            isSubmitPose ? Double(extendedFingerCount) / 5.0 : 0
-        )
-        let confidence = max(recordConfidence, candidateConfidence)
+        let isCancelPose = !thumbIndexContacted
+            && thumbExtended
+            && indexExtended
+            && middleExtended
+            && ringExtended
+            && littleExtended
+
+        let thumbIndexContactScore = min(1, max(0, 1 - (thumbIndexContactDistance / thumbIndexContactThreshold)))
+        let curledScore = average([
+            middleExtended ? 0 : 1,
+            ringExtended ? 0 : 1,
+            littleExtended ? 0 : 1
+        ])
+        let recordConfidence = average([thumbIndexContactScore, curledScore])
+        let submitConfidence = average([
+            thumbIndexContactScore,
+            middleExtended ? 1 : 0,
+            ringExtended ? 1 : 0,
+            littleExtended ? 1 : 0
+        ])
+        let cancelConfidence = average([
+            thumbExtended ? 1 : 0,
+            indexExtended ? 1 : 0,
+            middleExtended ? 1 : 0,
+            ringExtended ? 1 : 0,
+            littleExtended ? 1 : 0,
+            thumbIndexContacted ? 0 : 1
+        ])
+        let confidence = max(recordConfidence, submitConfidence, cancelConfidence)
 
         var summary: String
         if isCancelPose {
@@ -248,6 +265,13 @@ final class GestureInterpreter: GestureInterpreting {
         let tipDistance = distance(tip, wrist)
         let jointDistance = distance(joint, wrist)
         return tipDistance > jointDistance * 1.08
+    }
+
+    private func average(_ values: [Double]) -> Double {
+        guard !values.isEmpty else {
+            return 0
+        }
+        return values.reduce(0, +) / Double(values.count)
     }
 }
 
