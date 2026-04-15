@@ -26,6 +26,7 @@ final class GestureInterpreter: GestureInterpreting {
               let analysis = analyze(hand: hand, frameStatus: frameObservation.status) else {
             return updateState(
                 isRecordPose: false,
+                isRecordReleasePose: false,
                 isSubmitPose: false,
                 isCancelPose: false,
                 bestEffortSummary: frameObservation.status.detailMessage,
@@ -35,6 +36,7 @@ final class GestureInterpreter: GestureInterpreting {
 
         return updateState(
             isRecordPose: analysis.isRecordPose,
+            isRecordReleasePose: analysis.isRecordReleasePose,
             isSubmitPose: analysis.isSubmitPose,
             isCancelPose: analysis.isCancelPose,
             bestEffortSummary: analysis.summary,
@@ -44,6 +46,7 @@ final class GestureInterpreter: GestureInterpreting {
 
     private func updateState(
         isRecordPose: Bool,
+        isRecordReleasePose: Bool,
         isSubmitPose: Bool,
         isCancelPose: Bool,
         bestEffortSummary: String,
@@ -108,7 +111,7 @@ final class GestureInterpreter: GestureInterpreting {
                 summary = "Record pose held (\(recordActivationCount)/\(Self.recordActivationFrames))"
                 confidence = Double(recordActivationCount) / Double(Self.recordActivationFrames)
             }
-        } else {
+        } else if isRecordReleasePose {
             recordActivationCount = 0
 
             if recordLatched {
@@ -129,6 +132,9 @@ final class GestureInterpreter: GestureInterpreting {
             } else {
                 recordReleaseCount = 0
             }
+        } else {
+            recordActivationCount = 0
+            recordReleaseCount = 0
         }
 
         if candidate == .noAction && summary.isEmpty {
@@ -191,6 +197,13 @@ final class GestureInterpreter: GestureInterpreting {
             && !ringExtended
             && !littleExtended
 
+        let isRecordReleasePose = !thumbIndexContacted
+            && !thumbExtended
+            && indexExtended
+            && middleExtended
+            && ringExtended
+            && littleExtended
+
         let isSubmitPose = thumbIndexContacted
             && indexExtended
             && middleExtended
@@ -246,6 +259,7 @@ final class GestureInterpreter: GestureInterpreting {
 
         return PoseAnalysis(
             isRecordPose: isRecordPose,
+            isRecordReleasePose: isRecordReleasePose,
             isSubmitPose: isSubmitPose,
             isCancelPose: isCancelPose,
             confidence: confidence,
@@ -267,7 +281,7 @@ final class GestureInterpreter: GestureInterpreting {
     ) -> Bool {
         let tipDistance = distance(tip, wrist)
         let jointDistance = distance(joint, wrist)
-        return tipDistance > jointDistance * 1.08
+        return tipDistance > jointDistance * 1.2
     }
 
     private func average(_ values: [Double]) -> Double {
@@ -280,6 +294,7 @@ final class GestureInterpreter: GestureInterpreting {
 
 private struct PoseAnalysis {
     let isRecordPose: Bool
+    let isRecordReleasePose: Bool
     let isSubmitPose: Bool
     let isCancelPose: Bool
     let confidence: Double

@@ -22,7 +22,7 @@ final class GestureRecognitionTests: XCTestCase {
         let releaseResults = (0..<4).map { index in
             interpreter.interpret(
                 frameObservation: makeFrameObservation(
-                    pose: nil,
+                    pose: .recordRelease,
                     timestamp: baseTime.addingTimeInterval(0.35 + Double(index) * 0.05)
                 )
             )
@@ -30,6 +30,44 @@ final class GestureRecognitionTests: XCTestCase {
 
         XCTAssertEqual(releaseResults.dropLast().map(\.candidate), Array(repeating: .noAction, count: 3))
         XCTAssertEqual(releaseResults.last?.candidate, .recordRearmed)
+    }
+
+    func testGestureInterpreterKeepsRecordLatchedAcrossBorderlineReleaseFrames() {
+        let interpreter = GestureInterpreter()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 1_400)
+
+        let recordResults = (0..<6).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .record,
+                    timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(recordResults.last?.candidate, .recordStarted)
+
+        let borderlineFrames = (0..<4).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .borderlineRecord,
+                    timestamp: baseTime.addingTimeInterval(0.35 + Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(borderlineFrames.map(\.candidate), Array(repeating: .noAction, count: 4))
+
+        let continuedRecordFrames = (0..<6).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .record,
+                    timestamp: baseTime.addingTimeInterval(0.60 + Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(continuedRecordFrames.map(\.candidate), Array(repeating: .noAction, count: 6))
     }
 
     func testGestureInterpreterEmitsSubmitAndCancelOnlyOnce() {
@@ -92,6 +130,22 @@ final class GestureRecognitionTests: XCTestCase {
         }
 
         XCTAssertEqual(borderlineResults.map(\.candidate), Array(repeating: .noAction, count: 6))
+    }
+
+    func testGestureInterpreterRejectsHalfCurledSubmitLikePose() {
+        let interpreter = GestureInterpreter()
+        let baseTime = Date(timeIntervalSinceReferenceDate: 2_375)
+
+        let misfireResults = (0..<4).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .halfCurledSubmit,
+                    timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(misfireResults.map(\.candidate), Array(repeating: .noAction, count: 4))
     }
 
     func testGestureInterpreterRejectsLegacyCancelLikePose() {
@@ -348,6 +402,8 @@ final class GestureRecognitionTests: XCTestCase {
         case cancel
         case legacyCancel
         case borderlineRecord
+        case recordRelease
+        case halfCurledSubmit
     }
 
     private func makeFrameObservation(
@@ -421,6 +477,18 @@ final class GestureRecognitionTests: XCTestCase {
             middleTip = landmark(0.605, 0.355)
             ringTip = landmark(0.655, 0.350)
             littleTip = landmark(0.705, 0.345)
+        case .recordRelease:
+            thumbTip = landmark(0.420, 0.320)
+            indexTip = landmark(0.565, 0.870)
+            middleTip = landmark(0.625, 0.860)
+            ringTip = landmark(0.675, 0.850)
+            littleTip = landmark(0.725, 0.835)
+        case .halfCurledSubmit:
+            thumbTip = landmark(0.565, 0.495)
+            indexTip = landmark(0.575, 0.500)
+            middleTip = landmark(0.620, 0.500)
+            ringTip = landmark(0.670, 0.500)
+            littleTip = landmark(0.720, 0.490)
         }
 
         return HandPoseObservation(
