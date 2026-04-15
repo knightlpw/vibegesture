@@ -3,21 +3,21 @@ import XCTest
 @testable import VibeGesture
 
 final class GestureRecognitionTests: XCTestCase {
-    func testGestureInterpreterEmitsPinchStartAndRearm() {
+    func testGestureInterpreterEmitsRecordStartAndRearm() {
         let interpreter = GestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 1_000)
 
-        let pinchResults = (0..<6).map { index in
+        let recordResults = (0..<6).map { index in
             interpreter.interpret(
                 frameObservation: makeFrameObservation(
-                    pose: .pinch,
+                    pose: .record,
                     timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
                 )
             )
         }
 
-        XCTAssertEqual(pinchResults.dropLast().map(\.candidate), Array(repeating: .noAction, count: 5))
-        XCTAssertEqual(pinchResults.last?.candidate, .pinchStarted)
+        XCTAssertEqual(recordResults.dropLast().map(\.candidate), Array(repeating: .noAction, count: 5))
+        XCTAssertEqual(recordResults.last?.candidate, .recordStarted)
 
         let releaseResults = (0..<4).map { index in
             interpreter.interpret(
@@ -29,7 +29,7 @@ final class GestureRecognitionTests: XCTestCase {
         }
 
         XCTAssertEqual(releaseResults.dropLast().map(\.candidate), Array(repeating: .noAction, count: 3))
-        XCTAssertEqual(releaseResults.last?.candidate, .pinchRearmed)
+        XCTAssertEqual(releaseResults.last?.candidate, .recordRearmed)
     }
 
     func testGestureInterpreterEmitsSubmitAndCancelOnlyOnce() {
@@ -94,28 +94,28 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertTrue(enable.shouldStartCamera)
         XCTAssertFalse(enable.shouldStopCamera)
 
-        let pinchStarted = machine.process(
+        let recordStarted = machine.process(
             gestureInterpretation: GestureInterpretation(
                 timestamp: baseTime.addingTimeInterval(0.1),
-                candidate: .pinchStarted,
+                candidate: .recordStarted,
                 confidence: 1.0,
-                summary: "Pinch pose stabilized"
+                summary: "Record pose stabilized"
             )
         )
-        XCTAssertEqual(pinchStarted.state, .cooldown)
-        XCTAssertEqual(pinchStarted.actionIntent, .toggleRecording)
-        XCTAssertTrue(pinchStarted.recordingActive)
+        XCTAssertEqual(recordStarted.state, .cooldown)
+        XCTAssertEqual(recordStarted.actionIntent, .toggleRecording)
+        XCTAssertTrue(recordStarted.recordingActive)
         XCTAssertEqual(machine.latestActionIntent, .toggleRecording)
 
-        let pinchCooldownExit = machine.process(
+        let recordCooldownExit = machine.process(
             gestureInterpretation: GestureInterpretation.noAction(
                 timestamp: baseTime.addingTimeInterval(0.9),
                 summary: "Waiting for a stable gesture"
             )
         )
-        XCTAssertEqual(pinchCooldownExit.state, .recordingActive)
-        XCTAssertEqual(pinchCooldownExit.actionIntent, .none)
-        XCTAssertTrue(pinchCooldownExit.recordingActive)
+        XCTAssertEqual(recordCooldownExit.state, .recordingActive)
+        XCTAssertEqual(recordCooldownExit.actionIntent, .none)
+        XCTAssertTrue(recordCooldownExit.recordingActive)
 
         let submitStarted = machine.process(
             gestureInterpretation: GestureInterpretation(
@@ -158,17 +158,17 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertEqual(enable.state, .idle)
         XCTAssertFalse(enable.recordingActive)
 
-        let pinchStarted = machine.process(
+        let recordStarted = machine.process(
             gestureInterpretation: GestureInterpretation(
                 timestamp: baseTime.addingTimeInterval(0.1),
-                candidate: .pinchStarted,
+                candidate: .recordStarted,
                 confidence: 1.0,
-                summary: "Pinch pose stabilized"
+                summary: "Record pose stabilized"
             )
         )
-        XCTAssertEqual(pinchStarted.state, .cooldown)
-        XCTAssertEqual(pinchStarted.actionIntent, .toggleRecording)
-        XCTAssertTrue(pinchStarted.recordingActive)
+        XCTAssertEqual(recordStarted.state, .cooldown)
+        XCTAssertEqual(recordStarted.actionIntent, .toggleRecording)
+        XCTAssertTrue(recordStarted.recordingActive)
 
         let disableDuringCooldown = machine.setRecognitionEnabled(
             false,
@@ -250,16 +250,16 @@ final class GestureRecognitionTests: XCTestCase {
         let enable = machine.setRecognitionEnabled(true, permissionState: .ready, timestamp: baseTime)
         XCTAssertEqual(enable.state, .idle)
 
-        let pinchStarted = machine.process(
+        let recordStarted = machine.process(
             gestureInterpretation: GestureInterpretation(
                 timestamp: baseTime.addingTimeInterval(0.1),
-                candidate: .pinchStarted,
+                candidate: .recordStarted,
                 confidence: 1.0,
-                summary: "Pinch pose stabilized"
+                summary: "Record pose stabilized"
             )
         )
-        XCTAssertEqual(pinchStarted.state, .cooldown)
-        XCTAssertTrue(pinchStarted.recordingActive)
+        XCTAssertEqual(recordStarted.state, .cooldown)
+        XCTAssertTrue(recordStarted.recordingActive)
 
         let gateLost = machine.updateForegroundAppGate(
             false,
@@ -280,7 +280,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     private enum SyntheticPose {
-        case pinch
+        case record
         case submit
         case cancel
     }
@@ -326,7 +326,7 @@ final class GestureRecognitionTests: XCTestCase {
         let littleTip: HandLandmarkObservation
 
         switch pose {
-        case .pinch:
+        case .record:
             thumbTip = landmark(0.565, 0.495)
             indexTip = landmark(0.575, 0.500)
             middleTip = landmark(0.605, 0.355)

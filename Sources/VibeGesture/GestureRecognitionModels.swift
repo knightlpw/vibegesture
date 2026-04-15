@@ -2,8 +2,8 @@ import Foundation
 
 enum GestureCandidate: String, Codable, Equatable {
     case noAction
-    case pinchStarted
-    case pinchRearmed
+    case recordStarted
+    case recordRearmed
     case submitStarted
     case cancelStarted
 
@@ -11,10 +11,10 @@ enum GestureCandidate: String, Codable, Equatable {
         switch self {
         case .noAction:
             return "No action"
-        case .pinchStarted:
-            return "Pinch started"
-        case .pinchRearmed:
-            return "Pinch re-armed"
+        case .recordStarted:
+            return "Record started"
+        case .recordRearmed:
+            return "Record re-armed"
         case .submitStarted:
             return "Submit started"
         case .cancelStarted:
@@ -24,9 +24,9 @@ enum GestureCandidate: String, Codable, Equatable {
 
     var isActionCandidate: Bool {
         switch self {
-        case .noAction, .pinchRearmed:
+        case .noAction, .recordRearmed:
             return false
-        case .pinchStarted, .submitStarted, .cancelStarted:
+        case .recordStarted, .submitStarted, .cancelStarted:
             return true
         }
     }

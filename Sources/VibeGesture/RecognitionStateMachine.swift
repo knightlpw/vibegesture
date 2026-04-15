@@ -110,9 +110,9 @@ struct RecognitionStateMachine {
         let actionIntent: RecognitionActionIntent
 
         switch gestureInterpretation.candidate {
-        case .noAction, .pinchRearmed:
+        case .noAction, .recordRearmed:
             actionIntent = .none
-        case .pinchStarted:
+        case .recordStarted:
             actionIntent = .toggleRecording
             recordingActive.toggle()
             cooldownDeadline = gestureInterpretation.timestamp.addingTimeInterval(Self.cooldownDuration)

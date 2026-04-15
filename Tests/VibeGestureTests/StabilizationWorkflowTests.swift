@@ -79,7 +79,7 @@ final class StabilizationWorkflowTests: XCTestCase {
         harness.enableRecognition(true, timestamp: baseTime)
 
         for index in 0..<6 {
-            harness.feed(pose: .pinch, timestamp: baseTime.addingTimeInterval(Double(index) * 0.05))
+            harness.feed(pose: .record, timestamp: baseTime.addingTimeInterval(Double(index) * 0.05))
         }
 
         XCTAssertEqual(harness.tappedShortcutNames, ["Fn"])
@@ -138,7 +138,7 @@ final class StabilizationWorkflowTests: XCTestCase {
         harness.enableRecognition(true, timestamp: baseTime)
 
         for index in 0..<6 {
-            harness.feed(pose: .pinch, timestamp: baseTime.addingTimeInterval(Double(index) * 0.05))
+            harness.feed(pose: .record, timestamp: baseTime.addingTimeInterval(Double(index) * 0.05))
         }
 
         XCTAssertEqual(harness.tappedShortcutNames, ["Fn"])
@@ -296,7 +296,7 @@ private final class StabilizationWorkflowHarness {
     }
 
     enum SyntheticPose {
-        case pinch
+        case record
         case submit
         case cancel
     }
@@ -334,7 +334,7 @@ private final class StabilizationWorkflowHarness {
         let littleTip: HandLandmarkObservation
 
         switch pose {
-        case .pinch:
+        case .record:
             thumbTip = landmark(0.565, 0.495)
             indexTip = landmark(0.575, 0.500)
             middleTip = landmark(0.605, 0.355)

@@ -6,16 +6,16 @@ protocol GestureInterpreting {
 }
 
 final class GestureInterpreter: GestureInterpreting {
-    static let pinchActivationFrames = 6
-    static let pinchRearmFrames = 4
+    static let recordActivationFrames = 6
+    static let recordRearmFrames = 4
     static let submitActivationFrames = 4
     static let cancelActivationFrames = 3
 
-    private var pinchActivationCount = 0
-    private var pinchReleaseCount = 0
+    private var recordActivationCount = 0
+    private var recordReleaseCount = 0
     private var submitActivationCount = 0
     private var cancelActivationCount = 0
-    private var pinchLatched = false
+    private var recordLatched = false
     private var submitLatched = false
     private var cancelLatched = false
 
@@ -25,7 +25,7 @@ final class GestureInterpreter: GestureInterpreting {
         guard let hand = frameObservation.hands.first,
               let analysis = analyze(hand: hand, frameStatus: frameObservation.status) else {
             return updateState(
-                isPinchPose: false,
+                isRecordPose: false,
                 isSubmitPose: false,
                 isCancelPose: false,
                 bestEffortSummary: frameObservation.status.detailMessage,
@@ -34,7 +34,7 @@ final class GestureInterpreter: GestureInterpreting {
         }
 
         return updateState(
-            isPinchPose: analysis.isPinchPose,
+            isRecordPose: analysis.isRecordPose,
             isSubmitPose: analysis.isSubmitPose,
             isCancelPose: analysis.isCancelPose,
             bestEffortSummary: analysis.summary,
@@ -43,7 +43,7 @@ final class GestureInterpreter: GestureInterpreting {
     }
 
     private func updateState(
-        isPinchPose: Bool,
+        isRecordPose: Bool,
         isSubmitPose: Bool,
         isCancelPose: Bool,
         bestEffortSummary: String,
@@ -92,42 +92,42 @@ final class GestureInterpreter: GestureInterpreting {
             }
         }
 
-        if isPinchPose {
-            pinchActivationCount += 1
-            pinchReleaseCount = 0
+        if isRecordPose {
+            recordActivationCount += 1
+            recordReleaseCount = 0
 
-            if !pinchLatched, pinchActivationCount >= Self.pinchActivationFrames {
-                pinchLatched = true
-                pinchActivationCount = 0
+            if !recordLatched, recordActivationCount >= Self.recordActivationFrames {
+                recordLatched = true
+                recordActivationCount = 0
                 if candidate == .noAction {
-                    candidate = .pinchStarted
-                    summary = "Pinch pose stabilized"
+                    candidate = .recordStarted
+                    summary = "Record pose stabilized"
                     confidence = 1.0
                 }
             } else if candidate == .noAction {
-                summary = "Pinch pose held (\(pinchActivationCount)/\(Self.pinchActivationFrames))"
-                confidence = Double(pinchActivationCount) / Double(Self.pinchActivationFrames)
+                summary = "Record pose held (\(recordActivationCount)/\(Self.recordActivationFrames))"
+                confidence = Double(recordActivationCount) / Double(Self.recordActivationFrames)
             }
         } else {
-            pinchActivationCount = 0
+            recordActivationCount = 0
 
-            if pinchLatched {
-                pinchReleaseCount += 1
+            if recordLatched {
+                recordReleaseCount += 1
 
-                if pinchReleaseCount >= Self.pinchRearmFrames {
-                    pinchLatched = false
-                    pinchReleaseCount = 0
+                if recordReleaseCount >= Self.recordRearmFrames {
+                    recordLatched = false
+                    recordReleaseCount = 0
                     if candidate == .noAction {
-                        candidate = .pinchRearmed
-                        summary = "Pinch re-armed"
+                        candidate = .recordRearmed
+                        summary = "Record re-armed"
                         confidence = 1.0
                     }
                 } else if candidate == .noAction {
-                    summary = "Pinch release held (\(pinchReleaseCount)/\(Self.pinchRearmFrames))"
-                    confidence = Double(pinchReleaseCount) / Double(Self.pinchRearmFrames)
+                    summary = "Record release held (\(recordReleaseCount)/\(Self.recordRearmFrames))"
+                    confidence = Double(recordReleaseCount) / Double(Self.recordRearmFrames)
                 }
             } else {
-                pinchReleaseCount = 0
+                recordReleaseCount = 0
             }
         }
 
@@ -175,9 +175,9 @@ final class GestureInterpreter: GestureInterpreting {
             0.0001
         )
 
-        let pinchDistance = distance(thumbTip, indexTip) / handSpan
-        let pinchThreshold = 0.28
-        let isPinchPose = pinchDistance <= pinchThreshold
+        let recordDistance = distance(thumbTip, indexTip) / handSpan
+        let recordThreshold = 0.28
+        let isRecordPose = recordDistance <= recordThreshold
 
         let indexExtended = isExtended(tip: indexTip, joint: indexPIP, wrist: wrist)
         let middleExtended = isExtended(tip: middleTip, joint: middlePIP, wrist: wrist)
@@ -193,28 +193,28 @@ final class GestureInterpreter: GestureInterpreting {
             thumbExtended
         ].filter { $0 }.count
 
-        let isCancelPose = !isPinchPose
+        let isCancelPose = !isRecordPose
             && indexExtended
             && middleExtended
             && !ringExtended
             && !littleExtended
 
-        let isSubmitPose = !isPinchPose && extendedFingerCount >= 4
+        let isSubmitPose = !isRecordPose && extendedFingerCount >= 4
 
-        let pinchConfidence = min(1, max(0, 1 - (pinchDistance / pinchThreshold)))
+        let recordConfidence = min(1, max(0, 1 - (recordDistance / recordThreshold)))
         let candidateConfidence = max(
             isCancelPose ? 0.92 : 0,
             isSubmitPose ? Double(extendedFingerCount) / 5.0 : 0
         )
-        let confidence = max(pinchConfidence, candidateConfidence)
+        let confidence = max(recordConfidence, candidateConfidence)
 
         var summary: String
         if isCancelPose {
             summary = "Cancel pose observed"
         } else if isSubmitPose {
             summary = "Submit pose observed"
-        } else if isPinchPose {
-            summary = "Pinch pose observed"
+        } else if isRecordPose {
+            summary = "Record pose observed"
         } else {
             summary = "Waiting for a stable gesture"
             if case .noRightHandDetected = frameStatus {
@@ -225,7 +225,7 @@ final class GestureInterpreter: GestureInterpreting {
         }
 
         return PoseAnalysis(
-            isPinchPose: isPinchPose,
+            isRecordPose: isRecordPose,
             isSubmitPose: isSubmitPose,
             isCancelPose: isCancelPose,
             confidence: confidence,
@@ -252,7 +252,7 @@ final class GestureInterpreter: GestureInterpreting {
 }
 
 private struct PoseAnalysis {
-    let isPinchPose: Bool
+    let isRecordPose: Bool
     let isSubmitPose: Bool
     let isCancelPose: Bool
     let confidence: Double
