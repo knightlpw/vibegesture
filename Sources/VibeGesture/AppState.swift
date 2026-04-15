@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Observation
 
@@ -11,6 +12,10 @@ final class AppState {
     }
 
     var permissionState: PermissionState {
+        didSet { notifyChange() }
+    }
+
+    var permissionDiagnostics: PermissionDiagnostics {
         didSet { notifyChange() }
     }
 
@@ -50,6 +55,10 @@ final class AppState {
         self.configuration = configuration
         self.recognitionState = .disabled
         self.permissionState = .missingBoth
+        self.permissionDiagnostics = PermissionDiagnostics(
+            cameraAuthorizationStatus: .notDetermined,
+            accessibilityTrusted: false
+        )
         self.cameraPipelineState = .stopped
         self.latestCameraFrameObservation = nil
         self.latestGestureInterpretation = nil
