@@ -156,8 +156,8 @@
 把原始观测转成可执行的 gesture candidate，并用显式 state machine 管起来。
 
 ### 主要内容
-- pinch 检测
-- pinch re-arm / pinch exit 检测
+- record 检测
+- record re-arm / record exit 检测
 - submit 检测
 - cancel 检测
 - 阈值和 debounce
@@ -168,8 +168,8 @@
 - 依赖阶段 3 的摄像头和 Vision pipeline
 
 ### 退出条件
-- pinch 可以稳定触发一次
-- 持续 pinch 不会重复触发
+- record 可以稳定触发一次
+- 持续 record 不会重复触发
 - submit 和 cancel 都是一次性触发
 - cooldown 可以阻止重复触发
 - `recording_active` 与 `idle` 之间的语义清晰
@@ -199,7 +199,7 @@
 - 依赖阶段 2 的安全关停规则
 
 ### 退出条件
-- pinch 能正确发出一次 record toggle tap
+- record 能正确发出一次 record toggle tap
 - submit 在录音关闭时发送 Enter
 - submit 在录音开启时先停录、等待、再发送 Enter
 - cancel 可以终止 submit 等待窗口
@@ -301,7 +301,7 @@
 
 ### 退出条件
 - 识别开 / 关稳定
-- pinch 开始 / 停止录音稳定
+- record 开始 / 停止录音稳定
 - submit 稳定
 - cancel 稳定
 - 权限与 gating 的安全行为稳定
@@ -344,7 +344,7 @@ flowchart LR
 2. 识别开 / 关可控
 3. 权限流正确
 4. 摄像头与 Vision pipeline 正常
-5. pinch 能切换录音
+5. record 能切换录音
 6. submit 能发送 Enter
 7. cancel 能中止流程
 8. 支持应用 gating 正确

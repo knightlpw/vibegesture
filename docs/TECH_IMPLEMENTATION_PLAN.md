@@ -83,6 +83,16 @@ app gate 应被视作独立的放行 / 拒绝条件，而不是 recognition stat
 
 其中 `recognition_state` 是主控制态，`permission_state` 只是它的原因细分之一。
 
+### 3.5 手势与系统操作映射
+| 手势 | 面向摄像头的手部动作 | 系统操作 | 备注 |
+| --- | --- | --- | --- |
+| Record | 右手拇指和食指捏合，其他三指握拳 | `Fn` 单击 | 录音开 / 关切换 |
+| Submit | 右手呈 `OK` 状，拇指和食指捏合，其他三指张开 | `Enter` 单击 | 录音开启时先停录，再延迟后发送 Enter |
+| Cancel | 右手手掌张开，掌心面对摄像头 | `Esc` 单击 | 录音开启时先停录，再发送 Esc |
+
+`Record` / `Submit` / `Cancel` 是 V1 唯一需要作为产品语义对待的动作手势。  
+所有更细的 Vision 关键点与阈值规则，只是为了稳定识别这三种动作。
+
 ---
 
 ## 4. 数据模型
@@ -188,7 +198,7 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 ### 职责
 - 运行 Vision hand pose 请求
 - 产出适用于单只右手的标准化观测
-- 为手势解释器提供足以识别 pinch、submit、cancel 和 re-arm 条件的信号
+- 为手势解释器提供足以识别 record、submit、cancel 和 re-arm 条件的信号
 
 ### 行为
 - 仅使用默认摄像头输入
@@ -196,7 +206,7 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 - 如果置信度过低，检测器应返回“没有可执行手势”，而不是猜测
 
 ### 建议
-不要让检测器自己解释“pinch 意味着开始录音”。那应该属于 gesture interpreter。
+不要让检测器自己解释“record 意味着开始录音”。那应该属于 gesture interpreter。
 
 ---
 
@@ -208,8 +218,8 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 - 输出抽象手势事件，而不是键盘事件
 
 ### 输出类型
-- `pinch_started`
-- `pinch_rearmed`
+- `record_started`
+- `record_rearmed`
 - `submit_started`
 - `cancel_started`
 - `no_action`
@@ -220,8 +230,8 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 ### 时间默认值
 除非调优证明有必要，否则使用以下默认值：
 - 目标帧率：`10-15 FPS`
-- pinch 激活：`6 consecutive frames`
-- pinch re-arm：`4 consecutive frames without pinch`
+- record 激活：`6 consecutive frames`
+- record re-arm：`4 consecutive frames without record`
 - submit 激活：`4 consecutive frames`
 - cancel 激活：`3 consecutive frames`
 - cooldown：`700 ms`
@@ -292,9 +302,9 @@ state machine 是唯一的主控制点。它可以读取 `permission_state` 和 
 - 开始摄像头采集
 - 开始 active-recognition 计时
 
-#### Pinch Start
+#### Record Start
 条件：
-- gesture interpreter 发出 `pinch_started`
+- gesture interpreter 发出 `record_started`
 - cooldown 未激活
 - 当前录音关闭
 
@@ -304,9 +314,9 @@ state machine 是唯一的主控制点。它可以读取 `permission_state` 和 
 3. 进入 `cooldown`
 4. cooldown 结束后进入 `recording_active`
 
-#### Pinch Stop
+#### Record Stop
 条件：
-- gesture interpreter 发出 `pinch_started`
+- gesture interpreter 发出 `record_started`
 - cooldown 未激活
 - 当前录音开启
 
@@ -549,9 +559,9 @@ V1 中，record toggle 快捷键仅允许单键。
 - 关闭识别
 - 在 1 小时 active recognition time 后自动超时
 
-### Pinch
-- pinch 一次开始录音
-- 再 pinch 一次停止录音
+### Record
+- record 一次开始录音
+- 再 record 一次停止录音
 - 手势持续保持时不会重复触发
 - cooldown 能阻止重复触发
 

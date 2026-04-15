@@ -176,7 +176,7 @@ flowchart LR
 职责：
 - 调用 Vision hand pose APIs
 - 生成标准化的单手手部观测
-- 为 gesture interpreter 提供足以识别 pinch、submit、cancel 和 re-arm 条件的信号
+- 为 gesture interpreter 提供足以识别 record、submit、cancel 和 re-arm 条件的信号
 
 非职责：
 - 手势语义
@@ -186,7 +186,7 @@ flowchart LR
 职责：
 - 将原始手部姿态观测转成已解释的 gesture candidate
 - 应用阈值和 debounce 规则
-- 判断 pinch / submit / cancel / re-arm 条件何时成立
+- 判断 record / submit / cancel / re-arm 条件何时成立
 
 非职责：
 - 决定当前前台应用是否被允许
@@ -258,6 +258,16 @@ flowchart LR
 ### 重要约束
 系统不应允许原始手势检测绕过 state machine。
 
+### 7.2 手势与系统操作映射
+| 手势 | 面向摄像头的手部动作 | 系统操作 |
+| --- | --- | --- |
+| Record | 右手拇指和食指捏合，其他手指握拳 | `Fn` 单击 |
+| Submit | 右手呈 `OK` 状，拇指和食指捏合，其他三指张开 | `Enter` 单击 |
+| Cancel | 右手手掌张开，掌心面对摄像头 | `Esc` 单击 |
+
+这张表描述的是系统语义，不是具体实现细节。  
+`Record` / `Submit` / `Cancel` 之外不应再引入新的默认手势动作。
+
 ---
 
 ## 8. 前台应用 gating
@@ -303,7 +313,7 @@ state machine 应当是唯一决定“某个检测到的手势是否可执行”
 ## 10. 事件语义（架构层）
 
 本架构假设 V1 的行为模型是 toggle：
-- pinch 通过单键 tap 切换录音开启 / 关闭
+- record 通过单键 tap 切换录音开启 / 关闭
 - submit 在处理完录音状态后发送文本
 - cancel 中断当前流程，必要时先安全停止录音
 
