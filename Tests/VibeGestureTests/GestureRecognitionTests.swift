@@ -4,7 +4,7 @@ import XCTest
 
 final class GestureRecognitionTests: XCTestCase {
     func testGestureInterpreterEmitsRecordStartAndRearm() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 1_000)
 
         let recordResults = (0..<6).map { index in
@@ -33,7 +33,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterKeepsRecordLatchedAcrossBorderlineReleaseFrames() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 1_400)
 
         let recordResults = (0..<6).map { index in
@@ -71,7 +71,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterEmitsSubmitAndCancelOnlyOnce() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_000)
 
         let submitResults = (0..<4).map { index in
@@ -94,7 +94,7 @@ final class GestureRecognitionTests: XCTestCase {
         )
         XCTAssertEqual(submitRepeat.candidate, .noAction)
 
-        let cancelInterpreter = GestureInterpreter()
+        let cancelInterpreter = makeTrainedGestureInterpreter()
         let cancelResults = (0..<3).map { index in
             cancelInterpreter.interpret(
                 frameObservation: makeFrameObservation(
@@ -117,7 +117,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsBorderlineRecordLikePose() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_250)
 
         let borderlineResults = (0..<6).map { index in
@@ -133,7 +133,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsHalfCurledSubmitLikePose() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_375)
 
         let misfireResults = (0..<4).map { index in
@@ -149,7 +149,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsLegacyCancelLikePose() {
-        let interpreter = GestureInterpreter()
+        let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_500)
 
         let legacyCancelResults = (0..<3).map { index in
@@ -162,6 +162,24 @@ final class GestureRecognitionTests: XCTestCase {
         }
 
         XCTAssertEqual(legacyCancelResults.map(\.candidate), Array(repeating: .noAction, count: 3))
+    }
+
+    func testGestureCalibrationSessionTrainsClassifierFromSamples() {
+        let model = makeTrainedClassifierModel()
+        let classifier = LearnedGesturePoseClassifier(model: model)
+
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .record))?.label,
+            .record
+        )
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .submit))?.label,
+            .submit
+        )
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .halfCurledSubmit))?.label,
+            .background
+        )
     }
 
     func testRecognitionStateMachineTransitionsThroughCooldown() {
@@ -404,6 +422,53 @@ final class GestureRecognitionTests: XCTestCase {
         case borderlineRecord
         case recordRelease
         case halfCurledSubmit
+    }
+
+    private func makeTrainedGestureInterpreter() -> GestureInterpreter {
+        GestureInterpreter(classifier: LearnedGesturePoseClassifier(model: makeTrainedClassifierModel()))
+    }
+
+    private func makeTrainedClassifierModel() -> GestureClassifierModel {
+        var session = GestureCalibrationSession()
+
+        session.recordSample(
+            label: .record,
+            hand: makeHandPoseObservation(pose: .record)
+        )
+        session.recordSample(
+            label: .record,
+            hand: makeHandPoseObservation(pose: .record)
+        )
+        session.recordSample(
+            label: .submit,
+            hand: makeHandPoseObservation(pose: .submit)
+        )
+        session.recordSample(
+            label: .submit,
+            hand: makeHandPoseObservation(pose: .submit)
+        )
+        session.recordSample(
+            label: .background,
+            hand: makeHandPoseObservation(pose: .recordRelease)
+        )
+        session.recordSample(
+            label: .background,
+            hand: makeHandPoseObservation(pose: .borderlineRecord)
+        )
+        session.recordSample(
+            label: .background,
+            hand: makeHandPoseObservation(pose: .halfCurledSubmit)
+        )
+        session.recordSample(
+            label: .background,
+            hand: makeHandPoseObservation(pose: .legacyCancel)
+        )
+
+        guard let model = session.train() else {
+            fatalError("Failed to train gesture classifier model")
+        }
+
+        return model
     }
 
     private func makeFrameObservation(

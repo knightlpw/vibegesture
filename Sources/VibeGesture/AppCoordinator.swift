@@ -4,7 +4,7 @@ import AppKit
 final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore: ConfigurationStore
     private let permissionManager = PermissionManager()
-    private let recognitionCoordinator = RecognitionCoordinator()
+    private let recognitionCoordinator: RecognitionCoordinator
     private let keyboardDispatcher = KeyboardDispatcher()
     private let foregroundAppGateMonitor = ForegroundAppGateMonitor()
     private let cameraPipelineController: CameraPipelineControlling
@@ -23,11 +23,16 @@ final class AppCoordinator: SafeShutdownHandling {
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
+        calibrationStore: GestureCalibrationStore = GestureCalibrationStore(),
         hotKeyManager: GlobalHotKeyManaging = GlobalHotKeyManager()
     ) {
         self.configurationStore = configurationStore
         self.hotKeyManager = hotKeyManager
         let configuration = configurationStore.load()
+        let classifier = LearnedGesturePoseClassifier(model: calibrationStore.loadClassifier())
+        self.recognitionCoordinator = RecognitionCoordinator(
+            interpreter: GestureInterpreter(classifier: classifier)
+        )
         let appState = AppState(configuration: configuration)
         self.appState = appState
         self.cameraPipelineController = CameraPipelineController()

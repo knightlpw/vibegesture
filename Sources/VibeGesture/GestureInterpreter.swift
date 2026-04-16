@@ -11,6 +11,11 @@ final class GestureInterpreter: GestureInterpreting {
     static let submitActivationFrames = 4
     static let cancelActivationFrames = 3
 
+    private static let recordActivationConfidenceThreshold = 0.58
+    private static let submitActivationConfidenceThreshold = 0.58
+
+    private let classifier: GesturePoseClassifying
+
     private var recordActivationCount = 0
     private var recordReleaseCount = 0
     private var submitActivationCount = 0
@@ -19,42 +24,49 @@ final class GestureInterpreter: GestureInterpreting {
     private var submitLatched = false
     private var cancelLatched = false
 
+    init(classifier: GesturePoseClassifying = LearnedGesturePoseClassifier()) {
+        self.classifier = classifier
+    }
+
     func interpret(frameObservation: CameraFrameObservation) -> GestureInterpretation {
         let timestamp = frameObservation.timestamp
 
-        guard let hand = frameObservation.hands.first,
-              let analysis = analyze(hand: hand, frameStatus: frameObservation.status) else {
+        guard let hand = frameObservation.hands.first else {
             return updateState(
-                isRecordPose: false,
-                isRecordReleasePose: false,
-                isSubmitPose: false,
+                classification: nil,
                 isCancelPose: false,
+                isRecordReleasePose: false,
                 bestEffortSummary: frameObservation.status.detailMessage,
                 timestamp: timestamp
             )
         }
 
+        let classification = classifier.classify(hand: hand)
+        let isCancelPose = isCancelPose(hand: hand)
+        let isRecordReleasePose = isRecordReleasePose(hand: hand)
+
         return updateState(
-            isRecordPose: analysis.isRecordPose,
-            isRecordReleasePose: analysis.isRecordReleasePose,
-            isSubmitPose: analysis.isSubmitPose,
-            isCancelPose: analysis.isCancelPose,
-            bestEffortSummary: analysis.summary,
+            classification: classification,
+            isCancelPose: isCancelPose,
+            isRecordReleasePose: isRecordReleasePose,
+            bestEffortSummary: summaryText(
+                classification: classification,
+                frameStatus: frameObservation.status
+            ),
             timestamp: timestamp
         )
     }
 
     private func updateState(
-        isRecordPose: Bool,
-        isRecordReleasePose: Bool,
-        isSubmitPose: Bool,
+        classification: GestureClassification?,
         isCancelPose: Bool,
+        isRecordReleasePose: Bool,
         bestEffortSummary: String,
         timestamp: Date
     ) -> GestureInterpretation {
         var candidate: GestureCandidate = .noAction
         var summary = bestEffortSummary
-        var confidence = 0.0
+        var confidence = classification?.confidence ?? 0
 
         if isCancelPose {
             cancelActivationCount += 1
@@ -72,69 +84,89 @@ final class GestureInterpreter: GestureInterpreting {
         } else if isCancelPose {
             candidate = .noAction
             summary = "Cancel pose held (\(cancelActivationCount)/\(Self.cancelActivationFrames))"
-            confidence = Double(cancelActivationCount) / Double(Self.cancelActivationFrames)
+            confidence = max(confidence, Double(cancelActivationCount) / Double(Self.cancelActivationFrames))
         }
 
         if candidate == .noAction {
-            if isSubmitPose {
-                submitActivationCount += 1
-            } else {
+            switch classification?.label {
+            case .submit:
+                if (classification?.confidence ?? 0) >= Self.submitActivationConfidenceThreshold {
+                    submitActivationCount += 1
+                } else {
+                    if !submitLatched {
+                        submitActivationCount = 0
+                    }
+                }
+
+                if !submitLatched, submitActivationCount >= Self.submitActivationFrames {
+                    submitLatched = true
+                    submitActivationCount = 0
+                    candidate = .submitStarted
+                    summary = "Submit classifier stabilized"
+                    confidence = classification?.confidence ?? 0
+                } else if candidate == .noAction {
+                    summary = "Submit classifier held (\(submitActivationCount)/\(Self.submitActivationFrames))"
+                    confidence = classification?.confidence ?? confidence
+                }
+
+                recordActivationCount = 0
+                recordReleaseCount = 0
+
+            case .record:
+                if (classification?.confidence ?? 0) >= Self.recordActivationConfidenceThreshold {
+                    recordActivationCount += 1
+                    recordReleaseCount = 0
+                } else {
+                    if !recordLatched {
+                        recordActivationCount = 0
+                    }
+                }
+
+                if !recordLatched, recordActivationCount >= Self.recordActivationFrames {
+                    recordLatched = true
+                    recordActivationCount = 0
+                    if candidate == .noAction {
+                        candidate = .recordStarted
+                        summary = "Record classifier stabilized"
+                        confidence = classification?.confidence ?? 0
+                    }
+                } else if candidate == .noAction {
+                    summary = "Record classifier held (\(recordActivationCount)/\(Self.recordActivationFrames))"
+                    confidence = classification?.confidence ?? confidence
+                }
+
+                submitActivationCount = 0
+                submitLatched = false
+
+            case .background:
+                recordActivationCount = 0
+                submitActivationCount = 0
+                submitLatched = false
+
+                if recordLatched, isRecordReleasePose {
+                    recordReleaseCount += 1
+
+                    if recordReleaseCount >= Self.recordRearmFrames {
+                        recordLatched = false
+                        recordReleaseCount = 0
+                        if candidate == .noAction {
+                            candidate = .recordRearmed
+                            summary = "Record re-armed"
+                            confidence = classification?.confidence ?? confidence
+                        }
+                    } else if candidate == .noAction {
+                        summary = "Record release held (\(recordReleaseCount)/\(Self.recordRearmFrames))"
+                        confidence = classification?.confidence ?? confidence
+                    }
+                } else if !recordLatched {
+                    recordReleaseCount = 0
+                }
+
+            case .none:
+                recordActivationCount = 0
                 submitActivationCount = 0
                 submitLatched = false
             }
-
-            if !submitLatched, submitActivationCount >= Self.submitActivationFrames {
-                submitLatched = true
-                submitActivationCount = 0
-                candidate = .submitStarted
-                summary = "Submit pose stabilized"
-                confidence = 1.0
-            } else if isSubmitPose {
-                summary = "Submit pose held (\(submitActivationCount)/\(Self.submitActivationFrames))"
-                confidence = Double(submitActivationCount) / Double(Self.submitActivationFrames)
-            }
-        }
-
-        if isRecordPose {
-            recordActivationCount += 1
-            recordReleaseCount = 0
-
-            if !recordLatched, recordActivationCount >= Self.recordActivationFrames {
-                recordLatched = true
-                recordActivationCount = 0
-                if candidate == .noAction {
-                    candidate = .recordStarted
-                    summary = "Record pose stabilized"
-                    confidence = 1.0
-                }
-            } else if candidate == .noAction {
-                summary = "Record pose held (\(recordActivationCount)/\(Self.recordActivationFrames))"
-                confidence = Double(recordActivationCount) / Double(Self.recordActivationFrames)
-            }
-        } else if isRecordReleasePose {
-            recordActivationCount = 0
-
-            if recordLatched {
-                recordReleaseCount += 1
-
-                if recordReleaseCount >= Self.recordRearmFrames {
-                    recordLatched = false
-                    recordReleaseCount = 0
-                    if candidate == .noAction {
-                        candidate = .recordRearmed
-                        summary = "Record re-armed"
-                        confidence = 1.0
-                    }
-                } else if candidate == .noAction {
-                    summary = "Record release held (\(recordReleaseCount)/\(Self.recordRearmFrames))"
-                    confidence = Double(recordReleaseCount) / Double(Self.recordRearmFrames)
-                }
-            } else {
-                recordReleaseCount = 0
-            }
-        } else {
-            recordActivationCount = 0
-            recordReleaseCount = 0
         }
 
         if candidate == .noAction && summary.isEmpty {
@@ -149,10 +181,29 @@ final class GestureInterpreter: GestureInterpreting {
         )
     }
 
-    private func analyze(
-        hand: HandPoseObservation,
+    private func summaryText(
+        classification: GestureClassification?,
         frameStatus: CameraFrameObservationStatus
-    ) -> PoseAnalysis? {
+    ) -> String {
+        guard let classification else {
+            return frameStatus.detailMessage
+        }
+
+        let confidence = Int((classification.confidence * 100).rounded())
+        switch classification.label {
+        case .record:
+            return "Record classifier observed (\(confidence)%)"
+        case .submit:
+            return "Submit classifier observed (\(confidence)%)"
+        case .background:
+            if case .noRightHandDetected = frameStatus {
+                return frameStatus.detailMessage
+            }
+            return "Background classifier observed (\(confidence)%)"
+        }
+    }
+
+    private func isCancelPose(hand: HandPoseObservation) -> Bool {
         guard
             let wrist = hand.landmarks[.wrist],
             let thumbTip = hand.landmarks[.thumbTip],
@@ -170,7 +221,7 @@ final class GestureInterpreter: GestureInterpreting {
             let littlePIP = hand.landmarks[.littlePIP],
             let littleTip = hand.landmarks[.littleTip]
         else {
-            return nil
+            return false
         }
 
         let handSpan = max(
@@ -191,80 +242,59 @@ final class GestureInterpreter: GestureInterpreting {
         let littleExtended = isExtended(tip: littleTip, joint: littlePIP, wrist: wrist)
         let thumbExtended = isExtended(tip: thumbTip, joint: thumbIP, wrist: wrist)
 
-        let isRecordPose = thumbIndexContacted
-            && indexExtended
-            && !middleExtended
-            && !ringExtended
-            && !littleExtended
-
-        let isRecordReleasePose = !thumbIndexContacted
-            && !thumbExtended
-            && indexExtended
-            && middleExtended
-            && ringExtended
-            && littleExtended
-
-        let isSubmitPose = thumbIndexContacted
-            && indexExtended
-            && middleExtended
-            && ringExtended
-            && littleExtended
-
-        let isCancelPose = !thumbIndexContacted
+        return !thumbIndexContacted
             && thumbExtended
             && indexExtended
             && middleExtended
             && ringExtended
             && littleExtended
+    }
 
-        let thumbIndexContactScore = min(1, max(0, 1 - (thumbIndexContactDistance / thumbIndexContactThreshold)))
-        let curledScore = average([
-            middleExtended ? 0 : 1,
-            ringExtended ? 0 : 1,
-            littleExtended ? 0 : 1
-        ])
-        let recordConfidence = average([thumbIndexContactScore, indexExtended ? 1 : 0, curledScore])
-        let submitConfidence = average([
-            thumbIndexContactScore,
-            indexExtended ? 1 : 0,
-            middleExtended ? 1 : 0,
-            ringExtended ? 1 : 0,
-            littleExtended ? 1 : 0
-        ])
-        let cancelConfidence = average([
-            thumbExtended ? 1 : 0,
-            indexExtended ? 1 : 0,
-            middleExtended ? 1 : 0,
-            ringExtended ? 1 : 0,
-            littleExtended ? 1 : 0,
-            thumbIndexContacted ? 0 : 1
-        ])
-        let confidence = max(recordConfidence, submitConfidence, cancelConfidence)
-
-        var summary: String
-        if isCancelPose {
-            summary = "Cancel pose observed"
-        } else if isSubmitPose {
-            summary = "Submit pose observed"
-        } else if isRecordPose {
-            summary = "Record pose observed"
-        } else {
-            summary = "Waiting for a stable gesture"
-            if case .noRightHandDetected = frameStatus {
-                summary = frameStatus.detailMessage
-            } else if case .pipelineFailed(let message) = frameStatus {
-                summary = message
-            }
+    private func isRecordReleasePose(hand: HandPoseObservation) -> Bool {
+        guard
+            let wrist = hand.landmarks[.wrist],
+            let thumbTip = hand.landmarks[.thumbTip],
+            let thumbIP = hand.landmarks[.thumbIP],
+            let indexMCP = hand.landmarks[.indexMCP],
+            let indexPIP = hand.landmarks[.indexPIP],
+            let indexTip = hand.landmarks[.indexTip],
+            let middleMCP = hand.landmarks[.middleMCP],
+            let middlePIP = hand.landmarks[.middlePIP],
+            let middleTip = hand.landmarks[.middleTip],
+            let ringMCP = hand.landmarks[.ringMCP],
+            let ringPIP = hand.landmarks[.ringPIP],
+            let ringTip = hand.landmarks[.ringTip],
+            let littleMCP = hand.landmarks[.littleMCP],
+            let littlePIP = hand.landmarks[.littlePIP],
+            let littleTip = hand.landmarks[.littleTip]
+        else {
+            return false
         }
 
-        return PoseAnalysis(
-            isRecordPose: isRecordPose,
-            isRecordReleasePose: isRecordReleasePose,
-            isSubmitPose: isSubmitPose,
-            isCancelPose: isCancelPose,
-            confidence: confidence,
-            summary: summary
+        let handSpan = max(
+            distance(wrist, indexMCP),
+            distance(wrist, middleMCP),
+            distance(wrist, ringMCP),
+            distance(wrist, littleMCP),
+            0.0001
         )
+
+        let thumbIndexContactDistance = distance(thumbTip, indexTip) / handSpan
+        let thumbIndexContactThreshold = 0.22
+        let thumbIndexContacted = thumbIndexContactDistance <= thumbIndexContactThreshold
+
+        let indexExtended = isExtended(tip: indexTip, joint: indexPIP, wrist: wrist)
+        let middleExtended = isExtended(tip: middleTip, joint: middlePIP, wrist: wrist)
+        let ringExtended = isExtended(tip: ringTip, joint: ringPIP, wrist: wrist)
+        let littleExtended = isExtended(tip: littleTip, joint: littlePIP, wrist: wrist)
+        let thumbOpening = distance(thumbTip, thumbIP) / handSpan
+
+        return !thumbIndexContacted
+            && thumbOpening >= 0.08
+            && indexExtended
+            && middleExtended
+            && ringExtended
+            && littleExtended
     }
 
     private func distance(
@@ -283,20 +313,4 @@ final class GestureInterpreter: GestureInterpreting {
         let jointDistance = distance(joint, wrist)
         return tipDistance > jointDistance * 1.2
     }
-
-    private func average(_ values: [Double]) -> Double {
-        guard !values.isEmpty else {
-            return 0
-        }
-        return values.reduce(0, +) / Double(values.count)
-    }
-}
-
-private struct PoseAnalysis {
-    let isRecordPose: Bool
-    let isRecordReleasePose: Bool
-    let isSubmitPose: Bool
-    let isCancelPose: Bool
-    let confidence: Double
-    let summary: String
 }
