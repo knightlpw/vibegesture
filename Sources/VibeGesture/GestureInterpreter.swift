@@ -14,7 +14,7 @@ final class GestureInterpreter: GestureInterpreting {
     private static let recordActivationConfidenceThreshold = 0.58
     private static let submitActivationConfidenceThreshold = 0.58
 
-    private let classifier: GesturePoseClassifying
+    private var classifier: GesturePoseClassifying
 
     private var recordActivationCount = 0
     private var recordReleaseCount = 0
@@ -25,6 +25,10 @@ final class GestureInterpreter: GestureInterpreting {
     private var cancelLatched = false
 
     init(classifier: GesturePoseClassifying = LearnedGesturePoseClassifier()) {
+        self.classifier = classifier
+    }
+
+    func updateClassifier(_ classifier: GesturePoseClassifying) {
         self.classifier = classifier
     }
 

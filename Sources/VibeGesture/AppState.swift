@@ -43,6 +43,10 @@ final class AppState {
         didSet { notifyChange() }
     }
 
+    var calibrationStatus: GestureCalibrationStatus {
+        didSet { notifyChange() }
+    }
+
     var configuration: AppConfiguration {
         didSet { notifyChange() }
     }
@@ -58,6 +62,7 @@ final class AppState {
         self.isRecordingActive = false
         self.foregroundAppGateState = .unknown
         self.latestKeyboardDispatchResult = .idle
+        self.calibrationStatus = .bootstrap()
     }
 
     var isRecognitionBlockedByPermission: Bool {

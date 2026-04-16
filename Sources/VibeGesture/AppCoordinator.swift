@@ -5,6 +5,7 @@ final class AppCoordinator: SafeShutdownHandling {
     private let configurationStore: ConfigurationStore
     private let permissionManager = PermissionManager()
     private let recognitionCoordinator: RecognitionCoordinator
+    private let calibrationController: GestureCalibrationController
     private let keyboardDispatcher = KeyboardDispatcher()
     private let foregroundAppGateMonitor = ForegroundAppGateMonitor()
     private let cameraPipelineController: CameraPipelineControlling
@@ -30,13 +31,23 @@ final class AppCoordinator: SafeShutdownHandling {
         self.hotKeyManager = hotKeyManager
         let configuration = configurationStore.load()
         let classifier = LearnedGesturePoseClassifier(model: calibrationStore.loadClassifier())
-        self.recognitionCoordinator = RecognitionCoordinator(
+        let recognitionCoordinator = RecognitionCoordinator(
             interpreter: GestureInterpreter(classifier: classifier)
         )
+        self.recognitionCoordinator = recognitionCoordinator
+        let calibrationController = GestureCalibrationController(store: calibrationStore)
+        self.calibrationController = calibrationController
         let appState = AppState(configuration: configuration)
         self.appState = appState
         self.cameraPipelineController = CameraPipelineController()
         self.statusItemController = StatusItemController(appState: appState)
+        calibrationController.onStatusChange = { [weak self] status in
+            self?.appState.calibrationStatus = status
+        }
+        calibrationController.onClassifierReload = { [weak recognitionCoordinator] model in
+            recognitionCoordinator?.updateClassifier(model)
+        }
+        appState.calibrationStatus = calibrationController.status
         keyboardDispatcher.onResultChange = { [weak self] result in
             self?.appState.latestKeyboardDispatchResult = result
         }
@@ -45,6 +56,9 @@ final class AppCoordinator: SafeShutdownHandling {
         }
         settingsWindowController.onConfigurationChange = { [weak self] configuration in
             self?.updateConfiguration(configuration)
+        }
+        settingsWindowController.onCalibrationAction = { [weak self] action in
+            self?.handleCalibrationAction(action)
         }
 
         cameraPipelineController.onStateChange = { [weak self] state in
@@ -166,6 +180,30 @@ final class AppCoordinator: SafeShutdownHandling {
 
     private func showSettings() {
         settingsWindowController.showWindow()
+    }
+
+    private func handleCalibrationAction(_ action: GestureCalibrationAction) {
+        switch action {
+        case .capture(let label):
+            calibrationController.captureSample(
+                label: label,
+                observation: appState.latestCameraFrameObservation
+            )
+        case .clear(let label):
+            calibrationController.clearSamples(for: label)
+        case .save:
+            do {
+                _ = try calibrationController.saveCalibration()
+            } catch {
+                print("Failed to save calibration: \(error)")
+            }
+        case .reset:
+            do {
+                _ = try calibrationController.resetCalibration()
+            } catch {
+                print("Failed to reset calibration: \(error)")
+            }
+        }
     }
 
     private func handlePermissionGuidanceAction() {

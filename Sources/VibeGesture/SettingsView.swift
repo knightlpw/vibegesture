@@ -13,15 +13,18 @@ struct SettingsView: View {
     @Bindable var appState: AppState
     let onPermissionAction: () -> Void
     let onConfigurationChange: (AppConfiguration) -> Void
+    let onCalibrationAction: (GestureCalibrationAction) -> Void
 
     @State private var activeShortcutField: EditableShortcutField?
     @State private var shortcutValidationMessage: String?
+    @State private var selectedCalibrationLabel: GestureTrainingLabel = .record
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 shortcutsCard
+                calibrationCard
                 permissionCard
                 gatingCard
                 recognitionCard
@@ -83,6 +86,69 @@ struct SettingsView: View {
             }
         } label: {
             Text("Recognition")
+        }
+    }
+
+    private var calibrationCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 12) {
+                Picker("Calibration step", selection: $selectedCalibrationLabel) {
+                    ForEach(GestureTrainingLabel.allCases, id: \.self) { label in
+                        Text(label.displayName).tag(label)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                Text("Capture a few samples for each pose, then save to reload the calibrated classifier.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(GestureTrainingLabel.allCases, id: \.self) { label in
+                        HStack {
+                            Text(label.displayName)
+                            Spacer()
+                            Text("\(appState.calibrationStatus.sampleCounts[label, default: 0]) samples")
+                                .monospaced()
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Button("Capture current frame") {
+                        onCalibrationAction(.capture(selectedCalibrationLabel))
+                    }
+                    Button("Clear selected step") {
+                        onCalibrationAction(.clear(selectedCalibrationLabel))
+                    }
+                }
+
+                HStack(spacing: 10) {
+                    Button("Save and reload classifier") {
+                        onCalibrationAction(.save)
+                    }
+                    .disabled(!appState.calibrationStatus.canSave)
+
+                    Button("Reset calibration") {
+                        onCalibrationAction(.reset)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    settingRow(title: "Saved samples", value: "\(appState.calibrationStatus.persistedSampleCount)")
+                    settingRow(title: "Working samples", value: "\(appState.calibrationStatus.sampleCounts.values.reduce(0, +))")
+                    settingRow(title: "Classifier", value: appState.calibrationStatus.classifierSourceDescription)
+                }
+
+                Text(appState.calibrationStatus.statusMessage)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        } label: {
+            Text("Calibration")
         }
     }
 

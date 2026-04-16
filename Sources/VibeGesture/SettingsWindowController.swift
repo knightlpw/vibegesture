@@ -6,6 +6,7 @@ final class SettingsWindowController {
     private let appState: AppState
     private let onPermissionAction: () -> Void
     var onConfigurationChange: (AppConfiguration) -> Void = { _ in }
+    var onCalibrationAction: (GestureCalibrationAction) -> Void = { _ in }
     private var window: NSWindow?
 
     init(appState: AppState, onPermissionAction: @escaping () -> Void) {
@@ -18,7 +19,8 @@ final class SettingsWindowController {
             let contentView = SettingsView(
                 appState: appState,
                 onPermissionAction: onPermissionAction,
-                onConfigurationChange: onConfigurationChange
+                onConfigurationChange: onConfigurationChange,
+                onCalibrationAction: onCalibrationAction
             )
             let hostingController = NSHostingController(rootView: contentView)
             let newWindow = NSWindow(contentViewController: hostingController)

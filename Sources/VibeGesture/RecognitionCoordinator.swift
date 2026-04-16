@@ -3,9 +3,9 @@ import Foundation
 @MainActor
 final class RecognitionCoordinator {
     private var stateMachine = RecognitionStateMachine()
-    private let interpreter: GestureInterpreting
+    private let interpreter: GestureInterpreter
 
-    init(interpreter: GestureInterpreting = GestureInterpreter()) {
+    init(interpreter: GestureInterpreter = GestureInterpreter()) {
         self.interpreter = interpreter
     }
 
@@ -59,5 +59,9 @@ final class RecognitionCoordinator {
 
     func setRecordingActive(_ active: Bool) {
         stateMachine.setRecordingActive(active)
+    }
+
+    func updateClassifier(_ classifier: GestureClassifierModel) {
+        interpreter.updateClassifier(LearnedGesturePoseClassifier(model: classifier))
     }
 }

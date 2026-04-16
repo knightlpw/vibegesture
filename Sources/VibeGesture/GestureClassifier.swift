@@ -127,8 +127,20 @@ struct GestureFeatureExtractor {
 struct GestureCalibrationSession {
     private(set) var samples: [GestureTrainingSample] = []
 
+    init(samples: [GestureTrainingSample] = []) {
+        self.samples = samples
+    }
+
     mutating func addSample(_ sample: GestureTrainingSample) {
         samples.append(sample)
+    }
+
+    mutating func removeSamples(for label: GestureTrainingLabel) {
+        samples.removeAll { $0.label == label }
+    }
+
+    mutating func clear() {
+        samples.removeAll()
     }
 
     mutating func recordSample(label: GestureTrainingLabel, hand: HandPoseObservation) {
@@ -141,6 +153,18 @@ struct GestureCalibrationSession {
 
     func train() -> GestureClassifierModel? {
         GestureClassifierTrainer.train(samples: samples)
+    }
+
+    func sampleCount(for label: GestureTrainingLabel) -> Int {
+        samples.lazy.filter { $0.label == label }.count
+    }
+
+    func sampleCounts() -> [GestureTrainingLabel: Int] {
+        Dictionary(
+            uniqueKeysWithValues: GestureTrainingLabel.allCases.map { label in
+                (label, sampleCount(for: label))
+            }
+        )
     }
 }
 
