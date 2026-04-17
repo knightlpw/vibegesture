@@ -88,6 +88,26 @@ enum ForegroundAppGatePolicy {
             )
         )
     }
+
+    static func shouldBypassUnsupportedGateForCalibration(
+        gateState: ForegroundAppGateState,
+        settingsWindowVisible: Bool,
+        appBundleIdentifier: String?
+    ) -> Bool {
+        guard settingsWindowVisible else {
+            return false
+        }
+
+        guard let appBundleIdentifier else {
+            return false
+        }
+
+        guard case .unsupported(let info) = gateState else {
+            return false
+        }
+
+        return info.bundleIdentifier == appBundleIdentifier
+    }
 }
 
 @MainActor

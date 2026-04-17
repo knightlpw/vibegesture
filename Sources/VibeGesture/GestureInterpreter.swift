@@ -142,6 +142,12 @@ final class GestureInterpreter: GestureInterpreting {
                 submitActivationCount = 0
                 submitLatched = false
 
+            case .cancel:
+                recordActivationCount = 0
+                recordReleaseCount = 0
+                submitActivationCount = 0
+                submitLatched = false
+
             case .background:
                 recordActivationCount = 0
                 submitActivationCount = 0
@@ -199,6 +205,8 @@ final class GestureInterpreter: GestureInterpreting {
             return "Record classifier observed (\(confidence)%)"
         case .submit:
             return "Submit classifier observed (\(confidence)%)"
+        case .cancel:
+            return "Cancel classifier observed (\(confidence)%)"
         case .background:
             if case .noRightHandDetected = frameStatus {
                 return frameStatus.detailMessage

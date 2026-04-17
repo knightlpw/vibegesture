@@ -26,6 +26,10 @@ final class GestureCalibrationControllerTests: XCTestCase {
             observation: makeFrameObservation(pose: .submit)
         )
         controller.captureSample(
+            label: .cancel,
+            observation: makeFrameObservation(pose: .cancel)
+        )
+        controller.captureSample(
             label: .background,
             observation: makeFrameObservation(pose: .background)
         )
@@ -37,6 +41,7 @@ final class GestureCalibrationControllerTests: XCTestCase {
 
         XCTAssertEqual(controller.status.sampleCounts[.record], 1)
         XCTAssertEqual(controller.status.sampleCounts[.submit], 1)
+        XCTAssertEqual(controller.status.sampleCounts[.cancel], 1)
         XCTAssertEqual(controller.status.sampleCounts[.background], 1)
         XCTAssertTrue(controller.status.isDirty)
         XCTAssertTrue(controller.status.canSave)
@@ -46,13 +51,14 @@ final class GestureCalibrationControllerTests: XCTestCase {
         XCTAssertEqual(reloadedModels.count, 1)
         XCTAssertEqual(savedModel.classify(makeFeatures(pose: .record)).label, .record)
         XCTAssertEqual(savedModel.classify(makeFeatures(pose: .submit)).label, .submit)
+        XCTAssertEqual(savedModel.classify(makeFeatures(pose: .cancel)).label, .cancel)
         XCTAssertEqual(savedModel.classify(makeFeatures(pose: .background)).label, .background)
-        XCTAssertEqual(controller.status.persistedSampleCount, 3)
+        XCTAssertEqual(controller.status.persistedSampleCount, 4)
         XCTAssertFalse(controller.status.isDirty)
         XCTAssertEqual(controller.status.classifierSourceDescription, "Calibrated classifier loaded")
 
         let storedDataset = GestureCalibrationStore(fileURL: fileURL).loadDataset()
-        XCTAssertEqual(storedDataset?.samples.count, 3)
+        XCTAssertEqual(storedDataset?.samples.count, 4)
     }
 
     func testCalibrationControllerResetsCalibrationDataAndReloadsBootstrapClassifier() throws {
@@ -76,6 +82,10 @@ final class GestureCalibrationControllerTests: XCTestCase {
             label: .submit,
             observation: makeFrameObservation(pose: .submit)
         )
+        controller.captureSample(
+            label: .cancel,
+            observation: makeFrameObservation(pose: .cancel)
+        )
         _ = try controller.saveCalibration()
 
         let resetModel = try controller.resetCalibration()
@@ -88,11 +98,13 @@ final class GestureCalibrationControllerTests: XCTestCase {
         XCTAssertEqual(controller.status.classifierSourceDescription, "Bootstrap classifier")
         XCTAssertEqual(resetModel.classify(makeFeatures(pose: .record)).label, .record)
         XCTAssertEqual(resetModel.classify(makeFeatures(pose: .submit)).label, .submit)
+        XCTAssertEqual(resetModel.classify(makeFeatures(pose: .cancel)).label, .cancel)
     }
 
     private enum SyntheticPose {
         case record
         case submit
+        case cancel
         case background
     }
 
@@ -145,6 +157,12 @@ final class GestureCalibrationControllerTests: XCTestCase {
             middleTip = landmark(0.625, 0.860)
             ringTip = landmark(0.675, 0.845)
             littleTip = landmark(0.725, 0.830)
+        case .cancel:
+            thumbTip = landmark(0.315, 0.615)
+            indexTip = landmark(0.520, 0.870)
+            middleTip = landmark(0.620, 0.880)
+            ringTip = landmark(0.720, 0.865)
+            littleTip = landmark(0.815, 0.840)
         case .background:
             thumbTip = landmark(0.420, 0.320)
             indexTip = landmark(0.565, 0.870)

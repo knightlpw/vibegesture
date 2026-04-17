@@ -35,7 +35,7 @@ enum GestureCalibrationControllerError: Error, Equatable, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingRequiredSamples:
-            return "Record and submit samples are required before saving."
+            return "Record, submit, and cancel samples are required before saving."
         }
     }
 }
@@ -147,7 +147,9 @@ final class GestureCalibrationController {
     }
 
     private static func canSave(session: GestureCalibrationSession) -> Bool {
-        session.sampleCount(for: .record) > 0 && session.sampleCount(for: .submit) > 0
+        session.sampleCount(for: .record) > 0
+            && session.sampleCount(for: .submit) > 0
+            && session.sampleCount(for: .cancel) > 0
     }
 
     private func updateStatus(message: String, isDirty: Bool) {

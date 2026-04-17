@@ -11,13 +11,18 @@ final class AppCoordinator: SafeShutdownHandling {
     private let cameraPipelineController: CameraPipelineControlling
     private let appState: AppState
     private let statusItemController: StatusItemController
+    private var calibrationModeActive = false
     private lazy var settingsWindowController: SettingsWindowController = {
-        SettingsWindowController(
+        let controller = SettingsWindowController(
             appState: appState,
             onPermissionAction: { [weak self] in
                 self?.handlePermissionGuidanceAction()
             }
         )
+        controller.onVisibilityChange = { [weak self] isVisible in
+            self?.handleCalibrationModeVisibilityChange(isVisible)
+        }
+        return controller
     }()
     private let hotKeyManager: GlobalHotKeyManaging
     private var activationObserver: NSObjectProtocol?
@@ -175,6 +180,8 @@ final class AppCoordinator: SafeShutdownHandling {
 
         if !newState.isReady {
             performSafeShutdown(stopRecording: appState.isRecordingActive)
+        } else if calibrationModeActive {
+            startCalibrationCameraIfNeeded()
         }
     }
 
@@ -304,6 +311,13 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func applyRecognitionTransition(_ transition: RecognitionTransition) {
+        applyRecognitionTransition(transition, suppressCameraStop: false)
+    }
+
+    private func applyRecognitionTransition(
+        _ transition: RecognitionTransition,
+        suppressCameraStop: Bool
+    ) {
         appState.recognitionState = transition.state
 
         if let gestureInterpretation = transition.gestureInterpretation {
@@ -320,7 +334,7 @@ final class AppCoordinator: SafeShutdownHandling {
 
         appState.isRecordingActive = transition.recordingActive
 
-        if transition.shouldStopCamera {
+        if transition.shouldStopCamera, !suppressCameraStop {
             cameraPipelineController.stop()
         }
 
@@ -343,13 +357,18 @@ final class AppCoordinator: SafeShutdownHandling {
     private func handleForegroundAppGateChange(_ state: ForegroundAppGateState) {
         let wasRecordingActive = appState.isRecordingActive
         let hadPendingSubmit = keyboardDispatcher.hasPendingSubmit
+        let calibrationBypass = ForegroundAppGatePolicy.shouldBypassUnsupportedGateForCalibration(
+            gateState: state,
+            settingsWindowVisible: calibrationModeActive,
+            appBundleIdentifier: Bundle.main.bundleIdentifier
+        )
         appState.foregroundAppGateState = state
 
         let transition = recognitionCoordinator.updateForegroundAppGate(
             state.isSupported,
             permissionState: appState.permissionState
         )
-        applyRecognitionTransition(transition)
+        applyRecognitionTransition(transition, suppressCameraStop: calibrationBypass)
 
         if !state.isSupported {
             if wasRecordingActive {
@@ -357,6 +376,47 @@ final class AppCoordinator: SafeShutdownHandling {
             } else if hadPendingSubmit {
                 keyboardDispatcher.cancelPendingSubmit()
             }
+
+            if calibrationBypass {
+                startCalibrationCameraIfNeeded()
+            }
         }
+    }
+
+    private func handleCalibrationModeVisibilityChange(_ isVisible: Bool) {
+        calibrationModeActive = isVisible
+
+        if isVisible {
+            startCalibrationCameraIfNeeded()
+            return
+        }
+
+        if !appState.foregroundAppGateState.isSupported {
+            if appState.isRecordingActive {
+                performSafeShutdown(stopRecording: true)
+            }
+            cameraPipelineController.stop()
+        }
+    }
+
+    private func startCalibrationCameraIfNeeded() {
+        guard appState.permissionState.isReady else {
+            return
+        }
+
+        guard ForegroundAppGatePolicy.shouldBypassUnsupportedGateForCalibration(
+            gateState: appState.foregroundAppGateState,
+            settingsWindowVisible: calibrationModeActive,
+            appBundleIdentifier: Bundle.main.bundleIdentifier
+        ) else {
+            return
+        }
+
+        guard appState.cameraPipelineState != .running,
+              appState.cameraPipelineState != .starting else {
+            return
+        }
+
+        cameraPipelineController.start()
     }
 }

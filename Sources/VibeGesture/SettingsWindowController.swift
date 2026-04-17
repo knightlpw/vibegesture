@@ -2,12 +2,17 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class SettingsWindowController {
+final class SettingsWindowController: NSObject, NSWindowDelegate {
     private let appState: AppState
     private let onPermissionAction: () -> Void
     var onConfigurationChange: (AppConfiguration) -> Void = { _ in }
     var onCalibrationAction: (GestureCalibrationAction) -> Void = { _ in }
+    var onVisibilityChange: (Bool) -> Void = { _ in }
     private var window: NSWindow?
+
+    var isVisible: Bool {
+        window?.isVisible == true
+    }
 
     init(appState: AppState, onPermissionAction: @escaping () -> Void) {
         self.appState = appState
@@ -30,10 +35,16 @@ final class SettingsWindowController {
             newWindow.isReleasedWhenClosed = false
             newWindow.center()
             newWindow.level = .normal
+            newWindow.delegate = self
             window = newWindow
         }
 
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        onVisibilityChange(true)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        onVisibilityChange(false)
     }
 }

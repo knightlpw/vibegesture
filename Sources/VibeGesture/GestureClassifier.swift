@@ -4,6 +4,7 @@ import Foundation
 enum GestureTrainingLabel: String, Codable, CaseIterable, Equatable {
     case record
     case submit
+    case cancel
     case background
 
     var displayName: String {
@@ -12,6 +13,8 @@ enum GestureTrainingLabel: String, Codable, CaseIterable, Equatable {
             return "Record"
         case .submit:
             return "Submit"
+        case .cancel:
+            return "Cancel"
         case .background:
             return "Background"
         }
@@ -237,7 +240,8 @@ enum GestureClassifierTrainer {
 
         let grouped = Dictionary(grouping: samples, by: \.label)
         guard let recordSamples = grouped[.record], !recordSamples.isEmpty,
-              let submitSamples = grouped[.submit], !submitSamples.isEmpty else {
+              let submitSamples = grouped[.submit], !submitSamples.isEmpty,
+              let cancelSamples = grouped[.cancel], !cancelSamples.isEmpty else {
             return nil
         }
 
@@ -329,6 +333,20 @@ enum GestureBootstrapSamples {
                 middleTip: landmark(0.630, 0.850),
                 ringTip: landmark(0.680, 0.835),
                 littleTip: landmark(0.730, 0.825)
+            )),
+            (.cancel, makeHandPoseObservation(
+                thumbTip: landmark(0.315, 0.615),
+                indexTip: landmark(0.520, 0.870),
+                middleTip: landmark(0.620, 0.880),
+                ringTip: landmark(0.720, 0.865),
+                littleTip: landmark(0.815, 0.840)
+            )),
+            (.cancel, makeHandPoseObservation(
+                thumbTip: landmark(0.330, 0.620),
+                indexTip: landmark(0.530, 0.865),
+                middleTip: landmark(0.625, 0.875),
+                ringTip: landmark(0.725, 0.860),
+                littleTip: landmark(0.810, 0.845)
             )),
             (.background, makeHandPoseObservation(
                 thumbTip: landmark(0.420, 0.320),

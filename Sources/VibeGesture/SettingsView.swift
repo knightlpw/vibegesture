@@ -99,7 +99,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Text("Capture a few samples for each pose, then save to reload the calibrated classifier.")
+                Text("Capture a few samples for record, submit, cancel, and optionally background, then save to reload the calibrated classifier.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

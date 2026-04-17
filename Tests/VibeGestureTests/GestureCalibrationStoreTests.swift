@@ -18,12 +18,16 @@ final class GestureCalibrationStoreTests: XCTestCase {
             features: makeFeatureVector(pose: .submit)
         ))
         try store.appendSample(GestureTrainingSample(
+            label: .cancel,
+            features: makeFeatureVector(pose: .cancel)
+        ))
+        try store.appendSample(GestureTrainingSample(
             label: .background,
             features: makeFeatureVector(pose: .recordRelease)
         ))
 
         let dataset = store.loadDataset()
-        XCTAssertEqual(dataset?.samples.count, 3)
+        XCTAssertEqual(dataset?.samples.count, 4)
 
         let classifier = LearnedGesturePoseClassifier(model: store.loadClassifier())
         XCTAssertEqual(
@@ -33,6 +37,10 @@ final class GestureCalibrationStoreTests: XCTestCase {
         XCTAssertEqual(
             classifier.classify(hand: makeHandPoseObservation(pose: .submit))?.label,
             .submit
+        )
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .cancel))?.label,
+            .cancel
         )
         XCTAssertEqual(
             classifier.classify(hand: makeHandPoseObservation(pose: .recordRelease))?.label,
@@ -46,6 +54,7 @@ final class GestureCalibrationStoreTests: XCTestCase {
     private enum SyntheticPose {
         case record
         case submit
+        case cancel
         case recordRelease
     }
 
@@ -90,6 +99,12 @@ final class GestureCalibrationStoreTests: XCTestCase {
             middleTip = landmark(0.625, 0.860)
             ringTip = landmark(0.675, 0.845)
             littleTip = landmark(0.725, 0.830)
+        case .cancel:
+            thumbTip = landmark(0.315, 0.615)
+            indexTip = landmark(0.520, 0.870)
+            middleTip = landmark(0.620, 0.880)
+            ringTip = landmark(0.720, 0.865)
+            littleTip = landmark(0.815, 0.840)
         case .recordRelease:
             thumbTip = landmark(0.420, 0.320)
             indexTip = landmark(0.565, 0.870)

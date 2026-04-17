@@ -177,6 +177,10 @@ final class GestureRecognitionTests: XCTestCase {
             .submit
         )
         XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .cancel))?.label,
+            .cancel
+        )
+        XCTAssertEqual(
             classifier.classify(hand: makeHandPoseObservation(pose: .halfCurledSubmit))?.label,
             .background
         )
@@ -446,6 +450,14 @@ final class GestureRecognitionTests: XCTestCase {
         session.recordSample(
             label: .submit,
             hand: makeHandPoseObservation(pose: .submit)
+        )
+        session.recordSample(
+            label: .cancel,
+            hand: makeHandPoseObservation(pose: .cancel)
+        )
+        session.recordSample(
+            label: .cancel,
+            hand: makeHandPoseObservation(pose: .cancel)
         )
         session.recordSample(
             label: .background,
