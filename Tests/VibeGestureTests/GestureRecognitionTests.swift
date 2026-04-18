@@ -134,6 +134,34 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertEqual(borderlineResults.map(\.candidate), Array(repeating: .noAction, count: 6))
     }
 
+    func testGestureInterpreterAcceptsCalibratedRecordConfidenceAtRuntimeThreshold() {
+        let interpreter = GestureInterpreter(classifier: StubGesturePoseClassifier(
+            classification: GestureClassification(
+                label: .record,
+                confidence: 0.55,
+                scores: [
+                    .record: 0.55,
+                    .submit: 0.20,
+                    .cancel: 0.15,
+                    .background: 0.10
+                ]
+            )
+        ))
+        let baseTime = Date(timeIntervalSinceReferenceDate: 2_300)
+
+        let results = (0..<6).map { index in
+            interpreter.interpret(
+                frameObservation: makeFrameObservation(
+                    pose: .record,
+                    timestamp: baseTime.addingTimeInterval(Double(index) * 0.05)
+                )
+            )
+        }
+
+        XCTAssertEqual(results.dropLast().map(\.candidate), Array(repeating: .noAction, count: 5))
+        XCTAssertEqual(results.last?.candidate, .recordStarted)
+    }
+
     func testGestureInterpreterRejectsHalfCurledSubmitLikePose() {
         let interpreter = makeTrainedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_375)
@@ -428,6 +456,14 @@ final class GestureRecognitionTests: XCTestCase {
         case borderlineRecord
         case recordRelease
         case halfCurledSubmit
+    }
+
+    private struct StubGesturePoseClassifier: GesturePoseClassifying {
+        let classification: GestureClassification?
+
+        func classify(hand: HandPoseObservation) -> GestureClassification? {
+            classification
+        }
     }
 
     private func makeTrainedGestureInterpreter() -> GestureInterpreter {

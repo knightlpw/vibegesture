@@ -11,7 +11,8 @@ final class GestureInterpreter: GestureInterpreting {
     static let submitActivationFrames = 4
     static let cancelActivationFrames = 3
 
-    private static let recordActivationConfidenceThreshold = 0.58
+    private static let recordActivationConfidenceThreshold =
+        GestureClassifierTrainingProfile.calibrated.thresholds.minimumConfidence
     private static let submitActivationConfidenceThreshold = 0.58
 
     private var classifier: GesturePoseClassifying
