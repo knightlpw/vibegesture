@@ -33,9 +33,9 @@
 
 ## 2026-04-18 — Reviewer verification for TASK_20260418_018
 
-- 重新在最新工作区代码上独立验证 `swift test` 与 `bash scripts/build_bundle.sh`，均通过
-- 规则模式 runtime 已生效，`GestureInterpreter` 不再依赖训练 classifier，状态栏与 settings 也已明确显示 `Runtime: Rules mode`
-- 回归测试覆盖了 `record` re-arm、`submit` / `cancel` 一次性触发以及 `cancel` direct `Esc` 语义
+- 重新在最新工作区代码上独立验证 `swift build`、`swift test`、`bash scripts/build_bundle.sh`，均通过
+- 通过真实状态栏菜单抽查，确认 `Runtime: Rules mode` 已显示，且菜单中只保留最小状态摘要与折叠后的诊断入口
+- `GestureInterpreter` 不再依赖训练 classifier，回归测试覆盖了 `record` re-arm、`submit` / `cancel` 一次性触发以及 `cancel` direct `Esc` 语义
 - 本轮最终验收结论：pass
 
 ## 2026-04-18 — TASK_20260418_018 completed
@@ -44,7 +44,7 @@
 - `GestureInterpreter` 现在直接根据几何规则判断候选姿态，`RecognitionCoordinator` 与 `AppCoordinator` 也已解除运行时 classifier 注入
 - 状态栏菜单和 settings 页面现在明确显示 `Runtime: Rules mode`，便于区分 legacy calibration 数据与在线识别模式
 - `swift build`、`swift test`、bundle smoke check 与状态栏菜单复验均通过
-- 当前结论：TASK_20260418_018 已完成，等待 reviewer 独立验收
+- 当前结论：TASK_20260418_018 已完成并通过 reviewer 独立验收
 
 ## 2026-04-18 — Reviewer verification for TASK_20260418_017
 
