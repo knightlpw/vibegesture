@@ -66,7 +66,12 @@ NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = nsContext
 symbolImage.isTemplate = true
 NSColor.black.set()
+context.saveGState()
+context.translateBy(x: symbolRect.midX, y: symbolRect.midY)
+context.rotate(by: .pi)
+context.translateBy(x: -symbolRect.midX, y: -symbolRect.midY)
 symbolImage.draw(in: symbolRect)
+context.restoreGState()
 NSGraphicsContext.restoreGraphicsState()
 
 guard let image = context.makeImage() else {
