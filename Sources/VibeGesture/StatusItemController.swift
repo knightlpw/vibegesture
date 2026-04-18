@@ -10,16 +10,18 @@ final class StatusItemController: NSObject {
     private var statusItem: NSStatusItem?
     private let menu = NSMenu(title: "VibeGesture")
     private let stateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let recordingItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let gateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let permissionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let toggleItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let diagnosticsItem = NSMenuItem(title: "Diagnostics", action: nil, keyEquivalent: "")
+    private let diagnosticsMenu = NSMenu(title: "Diagnostics")
     private let gestureCandidateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let gesturePoseItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let actionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let runtimeModeItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let recordingItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let gateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let keyboardItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let permissionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let pipelineItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
-    private let toggleItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let settingsItem = NSMenuItem(title: "", action: nil, keyEquivalent: ",")
     private let quitItem = NSMenuItem(title: "", action: nil, keyEquivalent: "q")
     private var menuConfigured = false
@@ -52,16 +54,11 @@ final class StatusItemController: NSObject {
     func menuSnapshot() -> [String] {
         [
             "State: \(appState.recognitionState.displayName)",
-            "Gesture candidate: \(gestureCandidateTitle())",
-            "Gesture pose: \(gesturePoseTitle())",
-            "Recent action: \(appState.latestRecognitionActionIntent.displayName)",
-            "Runtime: Rules mode",
             "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")",
             "Gate: \(appState.foregroundAppGateState.displayName)",
-            "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
             "Permissions: \(appState.permissionState.displayName)",
-            "Camera: \(appState.cameraPipelineState.displayName)",
             recognitionToggleTitle(),
+            "Diagnostics",
             "Settings…",
             "Quit VibeGesture"
         ]
@@ -99,36 +96,42 @@ final class StatusItemController: NSObject {
         quitItem.target = self
 
         menu.addItem(stateItem)
-        menu.addItem(gestureCandidateItem)
-        menu.addItem(gesturePoseItem)
-        menu.addItem(actionItem)
-        menu.addItem(runtimeModeItem)
         menu.addItem(recordingItem)
         menu.addItem(gateItem)
-        menu.addItem(keyboardItem)
         menu.addItem(permissionItem)
-        menu.addItem(pipelineItem)
         menu.addItem(toggleItem)
+        menu.addItem(.separator())
+        diagnosticsItem.submenu = diagnosticsMenu
+        menu.addItem(diagnosticsItem)
         menu.addItem(.separator())
         menu.addItem(settingsItem)
         menu.addItem(.separator())
         menu.addItem(quitItem)
+
+        diagnosticsMenu.autoenablesItems = false
+        diagnosticsMenu.addItem(gestureCandidateItem)
+        diagnosticsMenu.addItem(gesturePoseItem)
+        diagnosticsMenu.addItem(actionItem)
+        diagnosticsMenu.addItem(runtimeModeItem)
+        diagnosticsMenu.addItem(keyboardItem)
+        diagnosticsMenu.addItem(pipelineItem)
 
         menuConfigured = true
     }
 
     private func updateMenuTitles() {
         stateItem.title = "State: \(appState.recognitionState.displayName)"
+        recordingItem.title = "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")"
+        gateItem.title = "Gate: \(appState.foregroundAppGateState.displayName)"
+        permissionItem.title = "Permissions: \(appState.permissionState.displayName)"
+        toggleItem.title = recognitionToggleTitle()
+        diagnosticsItem.title = "Diagnostics"
         gestureCandidateItem.title = "Gesture candidate: \(gestureCandidateTitle())"
         gesturePoseItem.title = "Gesture pose: \(gesturePoseTitle())"
         actionItem.title = "Recent action: \(appState.latestRecognitionActionIntent.displayName)"
         runtimeModeItem.title = "Runtime: Rules mode"
-        recordingItem.title = "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")"
-        gateItem.title = "Gate: \(appState.foregroundAppGateState.displayName)"
         keyboardItem.title = "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)"
-        permissionItem.title = "Permissions: \(appState.permissionState.displayName)"
         pipelineItem.title = "Camera: \(appState.cameraPipelineState.displayName)"
-        toggleItem.title = recognitionToggleTitle()
         settingsItem.title = "Settings…"
         quitItem.title = "Quit VibeGesture"
     }

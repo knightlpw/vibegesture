@@ -44,6 +44,7 @@
 2026-04-18 阶段 11 的下一轮优化聚焦在当前训练模式本身：先让用户样本优先主导 classifier，再用 bootstrap 作为 cold-start fallback，暂不回退到规则模式。
 2026-04-18 阶段 11 的后续跟进开始聚焦 `record` 召回率：当前验收显示 `record` 仍容易回退为 `background`，下一张 task 卡应先对齐 calibrated runtime 与训练口径，再视需要补更直接的 `record` 几何特征。
 2026-04-18 在进一步验收后，阶段 11 现已转向直接的 runtime 规则模式重构：训练 classifier 的在线识别效果与复杂度都不再满足当前目标，下一张 task 卡应把 `GestureInterpreter` 直接切回规则判定，同时保留 state machine / keyboard / gate 这条后半链路。
+2026-04-18 在规则模式稳定后，下一张 task 卡应转向用户友好界面收敛：把菜单栏与 settings 中的诊断信息收进折叠 / 隐藏区域，只保留普通用户可理解的最小状态集，不改底层逻辑。
 
 ---
 

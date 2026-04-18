@@ -18,18 +18,16 @@ struct SettingsView: View {
     @State private var activeShortcutField: EditableShortcutField?
     @State private var shortcutValidationMessage: String?
     @State private var selectedCalibrationLabel: GestureTrainingLabel = .record
+    @State private var isDiagnosticsExpanded = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
                 shortcutsCard
-                calibrationCard
                 permissionCard
-                gatingCard
-                recognitionCard
-                pipelineCard
-                scaffoldCard
+                calibrationCard
+                diagnosticsSection
             }
         }
         .padding(20)
@@ -105,18 +103,6 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(GestureTrainingLabel.allCases, id: \.self) { label in
-                        HStack {
-                            Text(label.displayName)
-                            Spacer()
-                            Text("\(appState.calibrationStatus.sampleCounts[label, default: 0]) samples")
-                                .monospaced()
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
                 HStack(spacing: 10) {
                     Button("Capture current frame") {
                         onCalibrationAction(.capture(selectedCalibrationLabel))
@@ -137,12 +123,6 @@ struct SettingsView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    settingRow(title: "Saved samples", value: "\(appState.calibrationStatus.persistedSampleCount)")
-                    settingRow(title: "Working samples", value: "\(appState.calibrationStatus.sampleCounts.values.reduce(0, +))")
-                    settingRow(title: "Calibration source", value: appState.calibrationStatus.classifierSourceDescription)
-                }
-
                 Text(appState.calibrationStatus.statusMessage)
                     .font(.callout)
                     .foregroundStyle(.secondary)
@@ -150,6 +130,46 @@ struct SettingsView: View {
             }
         } label: {
             Text("Calibration")
+        }
+    }
+
+    private var diagnosticsSection: some View {
+        DisclosureGroup(isExpanded: $isDiagnosticsExpanded) {
+            VStack(alignment: .leading, spacing: 14) {
+                calibrationDiagnosticsCard
+                gatingCard
+                recognitionCard
+                pipelineCard
+                scaffoldCard
+            }
+            .padding(.top, 8)
+        } label: {
+            Text("Diagnostics")
+                .font(.headline)
+        }
+    }
+
+    private var calibrationDiagnosticsCard: some View {
+        GroupBox {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(GestureTrainingLabel.allCases, id: \.self) { label in
+                    HStack {
+                        Text(label.displayName)
+                        Spacer()
+                        Text("\(appState.calibrationStatus.sampleCounts[label, default: 0]) samples")
+                            .monospaced()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: 4) {
+                    settingRow(title: "Saved samples", value: "\(appState.calibrationStatus.persistedSampleCount)")
+                    settingRow(title: "Working samples", value: "\(appState.calibrationStatus.sampleCounts.values.reduce(0, +))")
+                    settingRow(title: "Calibration source", value: appState.calibrationStatus.classifierSourceDescription)
+                }
+            }
+        } label: {
+            Text("Calibration details")
         }
     }
 
