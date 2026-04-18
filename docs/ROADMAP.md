@@ -42,6 +42,7 @@
 2026-04-15 继续新增后续阶段 10：runtime feedback 与 gesture robustness，聚焦菜单栏实时刷新、gesture 展示、cancel 时序和 record / submit 误触率。
 2026-04-16 在阶段 10 之后新增后续阶段 11：gesture classifier 与个性化校准，聚焦把 `record` / `submit` 从硬阈值改成基于手部关键点的轻量训练分类器；下一张 task 卡先补用户侧校准入口与采样闭环，随后继续把 `cancel` 样本和前台校准例外补齐。
 2026-04-18 阶段 11 的下一轮优化聚焦在当前训练模式本身：先让用户样本优先主导 classifier，再用 bootstrap 作为 cold-start fallback，暂不回退到规则模式。
+2026-04-18 阶段 11 的后续跟进开始聚焦 `record` 召回率：当前验收显示 `record` 仍容易回退为 `background`，下一张 task 卡应先对齐 calibrated runtime 与训练口径，再视需要补更直接的 `record` 几何特征。
 
 ---
 

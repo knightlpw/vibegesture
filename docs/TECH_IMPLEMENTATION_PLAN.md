@@ -220,6 +220,7 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 ### 实现方向
 优先使用基于 Vision hand landmarks 的单用户轻量分类器来识别 `record` / `submit` / `cancel` / `no_action`，而不是继续依赖一组固定的硬阈值规则。  
 分类器可以先按单用户校准版落地：用当前使用者的样本训练，先保证触发率，再在后续迭代中逐步收紧误触。
+当存在 calibrated model 时，runtime 的接受口径应尽量与 calibrated profile 保持一致，不要再让解释器使用明显更硬的门槛去二次否决已经训练出来的结果。
 
 ### 输出类型
 - `record_started`
