@@ -68,4 +68,23 @@ final class PermissionStateTests: XCTestCase {
 
         XCTAssertEqual(manager.refresh(), .missingAccessibility)
     }
+
+    func testAccessibilityPermissionPromptFlowOnlyPromptsAndRefreshes() {
+        var promptCount = 0
+        var refreshCount = 0
+        let flow = AccessibilityPermissionPromptFlow(
+            prompt: {
+                promptCount += 1
+                return false
+            },
+            refresh: {
+                refreshCount += 1
+            }
+        )
+
+        flow.run()
+
+        XCTAssertEqual(promptCount, 1)
+        XCTAssertEqual(refreshCount, 1)
+    }
 }

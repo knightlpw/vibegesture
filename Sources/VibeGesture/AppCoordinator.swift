@@ -261,12 +261,14 @@ final class AppCoordinator: SafeShutdownHandling {
     }
 
     private func requestAccessibilityPermissionThenRefresh() {
-        let didPrompt = permissionManager.promptAccessibilityAccess()
-        refreshPermissionState()
-
-        if !didPrompt, !appState.permissionState.isReady {
-            openAccessibilitySettings()
-        }
+        AccessibilityPermissionPromptFlow(
+            prompt: { [permissionManager] in
+                permissionManager.promptAccessibilityAccess()
+            },
+            refresh: { [weak self] in
+                self?.refreshPermissionState()
+            }
+        ).run()
     }
 
     private func openSystemSettings() {
@@ -419,5 +421,15 @@ final class AppCoordinator: SafeShutdownHandling {
         }
 
         cameraPipelineController.start()
+    }
+}
+
+struct AccessibilityPermissionPromptFlow {
+    let prompt: () -> Bool
+    let refresh: () -> Void
+
+    func run() {
+        _ = prompt()
+        refresh()
     }
 }
