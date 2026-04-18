@@ -51,10 +51,26 @@ final class GestureCalibrationStore {
         try saveDataset(dataset)
     }
 
+    func loadClassifierResult() -> LoadedGestureClassifier {
+        if let dataset = loadDataset(), !dataset.samples.isEmpty,
+           let model = GestureClassifierTrainer.train(
+            samples: dataset.samples,
+            profile: .calibrated
+           ) {
+            return LoadedGestureClassifier(
+                model: model,
+                source: .calibrated(savedSampleCount: dataset.samples.count)
+            )
+        }
+
+        return LoadedGestureClassifier(
+            model: GestureClassifierModel.bootstrap(),
+            source: .bootstrap
+        )
+    }
+
     func loadClassifier() -> GestureClassifierModel {
-        let dataset = loadDataset()
-        let samples = (dataset?.samples ?? []) + GestureBootstrapSamples.defaultSamples()
-        return GestureClassifierTrainer.train(samples: samples) ?? GestureClassifierModel.bootstrap()
+        loadClassifierResult().model
     }
 
     func reset() throws {

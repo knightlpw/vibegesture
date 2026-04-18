@@ -35,7 +35,8 @@ final class AppCoordinator: SafeShutdownHandling {
         self.configurationStore = configurationStore
         self.hotKeyManager = hotKeyManager
         let configuration = configurationStore.load()
-        let classifier = LearnedGesturePoseClassifier(model: calibrationStore.loadClassifier())
+        let loadedClassifier = calibrationStore.loadClassifierResult()
+        let classifier = LearnedGesturePoseClassifier(model: loadedClassifier.model)
         let recognitionCoordinator = RecognitionCoordinator(
             interpreter: GestureInterpreter(classifier: classifier)
         )

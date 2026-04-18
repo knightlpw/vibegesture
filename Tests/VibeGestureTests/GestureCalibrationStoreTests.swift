@@ -3,7 +3,7 @@ import XCTest
 @testable import VibeGesture
 
 final class GestureCalibrationStoreTests: XCTestCase {
-    func testCalibrationStorePersistsSamplesAndRestoresClassifier() throws {
+    func testCalibrationStorePrefersUserSamplesWhenCalibrationIsComplete() throws {
         let directoryURL = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         let fileURL = directoryURL.appendingPathComponent("gesture-calibration.json")
@@ -21,15 +21,15 @@ final class GestureCalibrationStoreTests: XCTestCase {
             label: .cancel,
             features: makeFeatureVector(pose: .cancel)
         ))
-        try store.appendSample(GestureTrainingSample(
-            label: .background,
-            features: makeFeatureVector(pose: .recordRelease)
-        ))
 
         let dataset = store.loadDataset()
-        XCTAssertEqual(dataset?.samples.count, 4)
+        XCTAssertEqual(dataset?.samples.count, 3)
 
-        let classifier = LearnedGesturePoseClassifier(model: store.loadClassifier())
+        let loadedClassifier = store.loadClassifierResult()
+        XCTAssertEqual(loadedClassifier.source, .calibrated(savedSampleCount: 3))
+        XCTAssertNil(loadedClassifier.model.classStatistics[.background])
+
+        let classifier = LearnedGesturePoseClassifier(model: loadedClassifier.model)
         XCTAssertEqual(
             classifier.classify(hand: makeHandPoseObservation(pose: .record))?.label,
             .record
@@ -42,13 +42,42 @@ final class GestureCalibrationStoreTests: XCTestCase {
             classifier.classify(hand: makeHandPoseObservation(pose: .cancel))?.label,
             .cancel
         )
-        XCTAssertEqual(
-            classifier.classify(hand: makeHandPoseObservation(pose: .recordRelease))?.label,
-            .background
-        )
 
         try store.reset()
         XCTAssertNil(store.loadDataset())
+    }
+
+    func testCalibrationStoreFallsBackToBootstrapWhenCalibrationIsIncomplete() throws {
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let fileURL = directoryURL.appendingPathComponent("gesture-calibration.json")
+        let store = GestureCalibrationStore(fileURL: fileURL)
+
+        try store.appendSample(GestureTrainingSample(
+            label: .record,
+            features: makeFeatureVector(pose: .record)
+        ))
+        try store.appendSample(GestureTrainingSample(
+            label: .submit,
+            features: makeFeatureVector(pose: .submit)
+        ))
+
+        let loadedClassifier = store.loadClassifierResult()
+        XCTAssertEqual(loadedClassifier.source, .bootstrap)
+
+        let classifier = LearnedGesturePoseClassifier(model: loadedClassifier.model)
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .record))?.label,
+            .record
+        )
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .submit))?.label,
+            .submit
+        )
+        XCTAssertEqual(
+            classifier.classify(hand: makeHandPoseObservation(pose: .cancel))?.label,
+            .cancel
+        )
     }
 
     private enum SyntheticPose {

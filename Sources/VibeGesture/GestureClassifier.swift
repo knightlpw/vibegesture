@@ -63,6 +63,47 @@ struct GestureTrainingSample: Codable, Equatable {
     let features: GestureFeatureVector
 }
 
+enum GestureClassifierTrainingProfile: Equatable {
+    case calibrated
+    case bootstrap
+
+    var thresholds: GestureClassifierModel.ClassificationThresholds {
+        switch self {
+        case .calibrated:
+            return .init(
+                minimumConfidence: 0.54,
+                minimumMargin: 0.05,
+                minimumClassSpread: 0.10
+            )
+        case .bootstrap:
+            return .init(
+                minimumConfidence: 0.58,
+                minimumMargin: 0.07,
+                minimumClassSpread: 0.12
+            )
+        }
+    }
+}
+
+enum GestureClassifierSource: Equatable {
+    case calibrated(savedSampleCount: Int)
+    case bootstrap
+
+    var displayName: String {
+        switch self {
+        case .calibrated(let savedSampleCount):
+            return "Calibrated classifier (\(savedSampleCount) saved samples)"
+        case .bootstrap:
+            return "Bootstrap classifier fallback"
+        }
+    }
+}
+
+struct LoadedGestureClassifier: Equatable {
+    let model: GestureClassifierModel
+    let source: GestureClassifierSource
+}
+
 struct GestureClassStatistics: Codable, Equatable {
     let centroid: GestureFeatureVector
     let averageDistance: Double
@@ -154,8 +195,8 @@ struct GestureCalibrationSession {
         samples.append(GestureTrainingSample(label: label, features: features))
     }
 
-    func train() -> GestureClassifierModel? {
-        GestureClassifierTrainer.train(samples: samples)
+    func train(profile: GestureClassifierTrainingProfile = .calibrated) -> GestureClassifierModel? {
+        GestureClassifierTrainer.train(samples: samples, profile: profile)
     }
 
     func sampleCount(for label: GestureTrainingLabel) -> Int {
@@ -210,10 +251,14 @@ struct GestureClassifierModel: Codable, Equatable {
     }
 
     static func bootstrap() -> GestureClassifierModel {
-        GestureClassifierTrainer.train(samples: GestureBootstrapSamples.defaultSamples()) ?? GestureClassifierModel(
+        let thresholds = GestureClassifierTrainingProfile.bootstrap.thresholds
+        return GestureClassifierTrainer.train(
+            samples: GestureBootstrapSamples.defaultSamples(),
+            profile: .bootstrap
+        ) ?? GestureClassifierModel(
             featureCount: GestureBootstrapSamples.defaultSamples().first?.features.dimension ?? 0,
             classStatistics: [:],
-            thresholds: .init(minimumConfidence: 0.55, minimumMargin: 0.08, minimumClassSpread: 0.12)
+            thresholds: thresholds
         )
     }
 
@@ -229,7 +274,10 @@ struct GestureClassifierModel: Codable, Equatable {
 }
 
 enum GestureClassifierTrainer {
-    static func train(samples: [GestureTrainingSample]) -> GestureClassifierModel? {
+    static func train(
+        samples: [GestureTrainingSample],
+        profile: GestureClassifierTrainingProfile
+    ) -> GestureClassifierModel? {
         guard let featureCount = samples.first?.features.dimension else {
             return nil
         }
@@ -245,11 +293,7 @@ enum GestureClassifierTrainer {
             return nil
         }
 
-        let thresholds = GestureClassifierModel.ClassificationThresholds(
-            minimumConfidence: 0.58,
-            minimumMargin: 0.07,
-            minimumClassSpread: 0.12
-        )
+        let thresholds = profile.thresholds
 
         var classStatistics: [GestureTrainingLabel: GestureClassStatistics] = [:]
         for label in GestureTrainingLabel.allCases {

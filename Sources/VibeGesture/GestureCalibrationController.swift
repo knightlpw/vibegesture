@@ -23,7 +23,7 @@ struct GestureCalibrationStatus: Equatable {
             persistedSampleCount: 0,
             isDirty: false,
             canSave: false,
-            classifierSourceDescription: "Bootstrap classifier",
+            classifierSourceDescription: "Bootstrap classifier fallback",
             statusMessage: "Ready to calibrate"
         )
     }
@@ -55,18 +55,17 @@ final class GestureCalibrationController {
     init(store: GestureCalibrationStore = GestureCalibrationStore()) {
         self.store = store
         let persistedSamples = store.loadDataset()?.samples ?? []
+        let loadedClassifier = store.loadClassifierResult()
         self.session = GestureCalibrationSession(samples: persistedSamples)
         self.status = GestureCalibrationStatus(
             sampleCounts: session.sampleCounts(),
             persistedSampleCount: persistedSamples.count,
             isDirty: false,
             canSave: Self.canSave(session: session),
-            classifierSourceDescription: persistedSamples.isEmpty
-                ? "Bootstrap classifier"
-                : "Loaded \(persistedSamples.count) saved samples",
+            classifierSourceDescription: loadedClassifier.source.displayName,
             statusMessage: persistedSamples.isEmpty
                 ? "Ready to calibrate"
-                : "Loaded \(persistedSamples.count) saved samples"
+                : loadedClassifier.source.displayName
         )
     }
 
@@ -115,35 +114,35 @@ final class GestureCalibrationController {
         }
 
         try store.saveDataset(GestureCalibrationDataset(samples: session.samples))
-        let savedModel = store.loadClassifier()
+        let loadedClassifier = store.loadClassifierResult()
 
         status = GestureCalibrationStatus(
             sampleCounts: session.sampleCounts(),
             persistedSampleCount: session.samples.count,
             isDirty: false,
             canSave: Self.canSave(session: session),
-            classifierSourceDescription: "Calibrated classifier loaded",
-            statusMessage: "Saved \(session.samples.count) samples and reloaded classifier"
+            classifierSourceDescription: loadedClassifier.source.displayName,
+            statusMessage: "Saved \(session.samples.count) samples and reloaded \(loadedClassifier.source.displayName)"
         )
-        onClassifierReload?(savedModel)
-        return savedModel
+        onClassifierReload?(loadedClassifier.model)
+        return loadedClassifier.model
     }
 
     func resetCalibration() throws -> GestureClassifierModel {
         session.clear()
         try store.reset()
-        let model = store.loadClassifier()
+        let loadedClassifier = store.loadClassifierResult()
 
         status = GestureCalibrationStatus(
             sampleCounts: session.sampleCounts(),
             persistedSampleCount: 0,
             isDirty: false,
             canSave: false,
-            classifierSourceDescription: "Bootstrap classifier",
+            classifierSourceDescription: loadedClassifier.source.displayName,
             statusMessage: "Calibration data cleared and bootstrap classifier reloaded"
         )
-        onClassifierReload?(model)
-        return model
+        onClassifierReload?(loadedClassifier.model)
+        return loadedClassifier.model
     }
 
     private static func canSave(session: GestureCalibrationSession) -> Bool {

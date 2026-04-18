@@ -55,7 +55,10 @@ final class GestureCalibrationControllerTests: XCTestCase {
         XCTAssertEqual(savedModel.classify(makeFeatures(pose: .background)).label, .background)
         XCTAssertEqual(controller.status.persistedSampleCount, 4)
         XCTAssertFalse(controller.status.isDirty)
-        XCTAssertEqual(controller.status.classifierSourceDescription, "Calibrated classifier loaded")
+        XCTAssertEqual(
+            controller.status.classifierSourceDescription,
+            "Calibrated classifier (4 saved samples)"
+        )
 
         let storedDataset = GestureCalibrationStore(fileURL: fileURL).loadDataset()
         XCTAssertEqual(storedDataset?.samples.count, 4)
@@ -95,7 +98,10 @@ final class GestureCalibrationControllerTests: XCTestCase {
         XCTAssertEqual(controller.status.sampleCounts.values.reduce(0, +), 0)
         XCTAssertEqual(controller.status.persistedSampleCount, 0)
         XCTAssertFalse(controller.status.isDirty)
-        XCTAssertEqual(controller.status.classifierSourceDescription, "Bootstrap classifier")
+        XCTAssertEqual(
+            controller.status.classifierSourceDescription,
+            "Bootstrap classifier fallback"
+        )
         XCTAssertEqual(resetModel.classify(makeFeatures(pose: .record)).label, .record)
         XCTAssertEqual(resetModel.classify(makeFeatures(pose: .submit)).label, .submit)
         XCTAssertEqual(resetModel.classify(makeFeatures(pose: .cancel)).label, .cancel)
