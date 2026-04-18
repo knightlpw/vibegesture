@@ -56,7 +56,8 @@ final class GestureRecognitionTests: XCTestCase {
             )
         }
 
-        XCTAssertEqual(borderlineFrames.map(\.candidate), Array(repeating: .noAction, count: 4))
+        XCTAssertEqual(borderlineFrames.dropLast().map(\.candidate), Array(repeating: .noAction, count: 3))
+        XCTAssertEqual(borderlineFrames.last?.candidate, .recordRearmed)
 
         let continuedRecordFrames = (0..<6).map { index in
             interpreter.interpret(
@@ -67,7 +68,8 @@ final class GestureRecognitionTests: XCTestCase {
             )
         }
 
-        XCTAssertEqual(continuedRecordFrames.map(\.candidate), Array(repeating: .noAction, count: 6))
+        XCTAssertEqual(continuedRecordFrames.dropLast().map(\.candidate), Array(repeating: .noAction, count: 5))
+        XCTAssertEqual(continuedRecordFrames.last?.candidate, .recordStarted)
     }
 
     func testGestureInterpreterEmitsSubmitAndCancelOnlyOnce() {

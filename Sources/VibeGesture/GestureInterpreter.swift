@@ -39,7 +39,6 @@ final class GestureInterpreter: GestureInterpreting {
             return updateState(
                 classification: nil,
                 isCancelPose: false,
-                isRecordReleasePose: false,
                 bestEffortSummary: frameObservation.status.detailMessage,
                 timestamp: timestamp
             )
@@ -47,12 +46,10 @@ final class GestureInterpreter: GestureInterpreting {
 
         let classification = classifier.classify(hand: hand)
         let isCancelPose = isCancelPose(hand: hand)
-        let isRecordReleasePose = isRecordReleasePose(hand: hand)
 
         return updateState(
             classification: classification,
             isCancelPose: isCancelPose,
-            isRecordReleasePose: isRecordReleasePose,
             bestEffortSummary: summaryText(
                 classification: classification,
                 frameStatus: frameObservation.status
@@ -64,7 +61,6 @@ final class GestureInterpreter: GestureInterpreting {
     private func updateState(
         classification: GestureClassification?,
         isCancelPose: Bool,
-        isRecordReleasePose: Bool,
         bestEffortSummary: String,
         timestamp: Date
     ) -> GestureInterpretation {
@@ -153,7 +149,7 @@ final class GestureInterpreter: GestureInterpreting {
                 submitActivationCount = 0
                 submitLatched = false
 
-                if recordLatched, isRecordReleasePose {
+                if recordLatched {
                     recordReleaseCount += 1
 
                     if recordReleaseCount >= Self.recordRearmFrames {
@@ -168,7 +164,7 @@ final class GestureInterpreter: GestureInterpreting {
                         summary = "Record release held (\(recordReleaseCount)/\(Self.recordRearmFrames))"
                         confidence = classification?.confidence ?? confidence
                     }
-                } else if !recordLatched {
+                } else {
                     recordReleaseCount = 0
                 }
 
@@ -260,47 +256,6 @@ final class GestureInterpreter: GestureInterpreting {
             && middleExtended
             && ringExtended
             && littleExtended
-    }
-
-    private func isRecordReleasePose(hand: HandPoseObservation) -> Bool {
-        guard
-            let wrist = hand.landmarks[.wrist],
-            let thumbTip = hand.landmarks[.thumbTip],
-            let indexMCP = hand.landmarks[.indexMCP],
-            let indexTip = hand.landmarks[.indexTip],
-            let middleMCP = hand.landmarks[.middleMCP],
-            let middlePIP = hand.landmarks[.middlePIP],
-            let middleTip = hand.landmarks[.middleTip],
-            let ringMCP = hand.landmarks[.ringMCP],
-            let ringPIP = hand.landmarks[.ringPIP],
-            let ringTip = hand.landmarks[.ringTip],
-            let littleMCP = hand.landmarks[.littleMCP],
-            let littlePIP = hand.landmarks[.littlePIP],
-            let littleTip = hand.landmarks[.littleTip]
-        else {
-            return false
-        }
-
-        let handSpan = max(
-            distance(wrist, indexMCP),
-            distance(wrist, middleMCP),
-            distance(wrist, ringMCP),
-            distance(wrist, littleMCP),
-            0.0001
-        )
-
-        let thumbIndexContactDistance = distance(thumbTip, indexTip) / handSpan
-        let thumbIndexContactThreshold = 0.22
-        let thumbIndexContacted = thumbIndexContactDistance <= thumbIndexContactThreshold
-
-        let middleExtended = isExtended(tip: middleTip, joint: middlePIP, wrist: wrist)
-        let ringExtended = isExtended(tip: ringTip, joint: ringPIP, wrist: wrist)
-        let littleExtended = isExtended(tip: littleTip, joint: littlePIP, wrist: wrist)
-
-        return !thumbIndexContacted
-            && !middleExtended
-            && !ringExtended
-            && !littleExtended
     }
 
     private func distance(
