@@ -34,31 +34,56 @@ context.setAllowsAntialiasing(true)
 context.setShouldAntialias(true)
 context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
 context.fill(CGRect(x: 0, y: 0, width: canvasSize, height: canvasSize))
+context.translateBy(x: 0, y: CGFloat(canvasSize))
+context.scaleBy(x: 1, y: -1)
 
-let frameInset: CGFloat = 90
-let frameRect = CGRect(
-    x: frameInset,
-    y: frameInset,
-    width: CGFloat(canvasSize) - frameInset * 2,
-    height: CGFloat(canvasSize) - frameInset * 2
+func fillRoundedRect(_ rect: CGRect, radius: CGFloat, rotation: CGFloat = 0, about pivot: CGPoint? = nil) {
+    let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
+    guard rotation != 0, let pivot else {
+        context.addPath(path)
+        context.fillPath()
+        return
+    }
+
+    var transform = CGAffineTransform.identity
+    transform = transform.translatedBy(x: pivot.x, y: pivot.y)
+    transform = transform.rotated(by: rotation)
+    transform = transform.translatedBy(x: -pivot.x, y: -pivot.y)
+    context.addPath(path.copy(using: &transform) ?? path)
+    context.fillPath()
+}
+
+context.setFillColor(CGColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1))
+
+let palm = CGRect(x: 320, y: 250, width: 384, height: 370)
+fillRoundedRect(palm, radius: 120)
+
+let fingerWidth: CGFloat = 92
+let fingerGap: CGFloat = 28
+let fingerTop: CGFloat = 120
+let fingerHeight: CGFloat = 250
+
+let fingerXs: [CGFloat] = [0, 1, 2, 3].map { index in
+    322 + CGFloat(index) * (fingerWidth + fingerGap)
+}
+
+for x in fingerXs {
+    fillRoundedRect(
+        CGRect(x: x, y: fingerTop, width: fingerWidth, height: fingerHeight),
+        radius: 46
+    )
+}
+
+let thumb = CGRect(x: 238, y: 355, width: 98, height: 245)
+fillRoundedRect(
+    thumb,
+    radius: 48,
+    rotation: -.pi / 6,
+    about: CGPoint(x: 286, y: 465)
 )
 
-context.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-context.setLineWidth(34)
-context.addPath(CGPath(roundedRect: frameRect, cornerWidth: 180, cornerHeight: 180, transform: nil))
-context.strokePath()
-
-context.setLineCap(.round)
-context.setLineJoin(.round)
-context.setStrokeColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-context.setLineWidth(112)
-context.move(to: CGPoint(x: 304, y: 640))
-context.addLine(to: CGPoint(x: 512, y: 332))
-context.addLine(to: CGPoint(x: 720, y: 640))
-context.strokePath()
-
-context.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
-context.fillEllipse(in: CGRect(x: 472, y: 740, width: 80, height: 80))
+let wrist = CGRect(x: 354, y: 560, width: 296, height: 168)
+fillRoundedRect(wrist, radius: 84)
 
 guard let image = context.makeImage() else {
     fputs("Failed to render icon image.\n", stderr)
