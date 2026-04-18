@@ -41,7 +41,6 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
         window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        onVisibilityChange(true)
     }
 
     func windowWillClose(_ notification: Notification) {

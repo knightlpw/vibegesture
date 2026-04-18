@@ -12,6 +12,7 @@ final class AppCoordinator: SafeShutdownHandling {
     private let appState: AppState
     private let statusItemController: StatusItemController
     private var calibrationModeActive = false
+    private var pendingCalibrationCaptureLabel: GestureTrainingLabel?
     private lazy var settingsWindowController: SettingsWindowController = {
         let controller = SettingsWindowController(
             appState: appState,
@@ -78,6 +79,16 @@ final class AppCoordinator: SafeShutdownHandling {
         }
         cameraPipelineController.onObservation = { [weak self] observation in
             self?.appState.latestCameraFrameObservation = observation
+
+            if let pendingLabel = self?.pendingCalibrationCaptureLabel,
+               observation.hands.first != nil {
+                self?.calibrationController.captureSample(
+                    label: pendingLabel,
+                    observation: observation
+                )
+                self?.pendingCalibrationCaptureLabel = nil
+            }
+
             guard self?.appState.foregroundAppGateState.isSupported == true else {
                 return
             }
@@ -186,10 +197,16 @@ final class AppCoordinator: SafeShutdownHandling {
     private func handleCalibrationAction(_ action: GestureCalibrationAction) {
         switch action {
         case .capture(let label):
+            calibrationModeActive = true
+            pendingCalibrationCaptureLabel = label
+            startCalibrationCameraIfNeeded()
             calibrationController.captureSample(
                 label: label,
                 observation: appState.latestCameraFrameObservation
             )
+            if appState.latestCameraFrameObservation?.hands.first != nil {
+                pendingCalibrationCaptureLabel = nil
+            }
         case .clear(let label):
             calibrationController.clearSamples(for: label)
         case .save:
