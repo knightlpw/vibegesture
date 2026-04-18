@@ -117,10 +117,10 @@ final class KeyboardDispatcher {
     }
 
     init(
-        eventPoster: KeyboardEventPosting = SystemKeyboardEventPoster(),
+        eventPoster: KeyboardEventPosting? = nil,
         submitStopDelay: TimeInterval = 0.3
     ) {
-        self.eventPoster = eventPoster
+        self.eventPoster = eventPoster ?? SystemKeyboardEventPoster()
         self.submitStopDelay = submitStopDelay
     }
 
