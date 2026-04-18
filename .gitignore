@@ -4,3 +4,9 @@ DerivedData/
 .swiftpm/
 *.xcodeproj
 *.xcworkspace
+
+# Internal PM & agent files (local only, not for GitHub)
+PROJECT_CONTEXT.md
+pm/
+docs/AGENTS.md
+docs/handoff/
