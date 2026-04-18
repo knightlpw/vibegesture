@@ -1,4 +1,5 @@
 import CoreGraphics
+import AppKit
 import Foundation
 import ImageIO
 import UniformTypeIdentifiers
@@ -32,58 +33,41 @@ guard let context = CGContext(
 
 context.setAllowsAntialiasing(true)
 context.setShouldAntialias(true)
-context.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
-context.fill(CGRect(x: 0, y: 0, width: canvasSize, height: canvasSize))
 context.translateBy(x: 0, y: CGFloat(canvasSize))
 context.scaleBy(x: 1, y: -1)
 
-func fillRoundedRect(_ rect: CGRect, radius: CGFloat, rotation: CGFloat = 0, about pivot: CGPoint? = nil) {
-    let path = CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
-    guard rotation != 0, let pivot else {
-        context.addPath(path)
-        context.fillPath()
-        return
-    }
-
-    var transform = CGAffineTransform.identity
-    transform = transform.translatedBy(x: pivot.x, y: pivot.y)
-    transform = transform.rotated(by: rotation)
-    transform = transform.translatedBy(x: -pivot.x, y: -pivot.y)
-    context.addPath(path.copy(using: &transform) ?? path)
+func fillRoundedRect(_ rect: CGRect, radius: CGFloat, color: CGColor) {
+    context.setFillColor(color)
+    context.addPath(CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
     context.fillPath()
 }
 
-context.setFillColor(CGColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1))
+let outerRect = CGRect(x: 54, y: 54, width: 916, height: 916)
+fillRoundedRect(outerRect, radius: 196, color: CGColor(red: 0.975, green: 0.965, blue: 0.95, alpha: 1))
 
-let palm = CGRect(x: 320, y: 250, width: 384, height: 370)
-fillRoundedRect(palm, radius: 120)
+let borderPath = CGPath(roundedRect: outerRect, cornerWidth: 196, cornerHeight: 196, transform: nil)
+context.setStrokeColor(CGColor(red: 0.86, green: 0.84, blue: 0.81, alpha: 1))
+context.setLineWidth(24)
+context.addPath(borderPath)
+context.strokePath()
 
-let fingerWidth: CGFloat = 92
-let fingerGap: CGFloat = 28
-let fingerTop: CGFloat = 120
-let fingerHeight: CGFloat = 250
-
-let fingerXs: [CGFloat] = [0, 1, 2, 3].map { index in
-    322 + CGFloat(index) * (fingerWidth + fingerGap)
+guard let symbolBase = NSImage(systemSymbolName: "hand.raised", accessibilityDescription: "VibeGesture hand icon") ??
+    NSImage(systemSymbolName: "hand.fingers.spread", accessibilityDescription: "VibeGesture hand icon") else {
+    fputs("Failed to create SF Symbol image.\n", stderr)
+    exit(1)
 }
 
-for x in fingerXs {
-    fillRoundedRect(
-        CGRect(x: x, y: fingerTop, width: fingerWidth, height: fingerHeight),
-        radius: 46
-    )
-}
+let symbolConfig = NSImage.SymbolConfiguration(pointSize: 760, weight: .regular, scale: .large)
+let symbolImage = symbolBase.withSymbolConfiguration(symbolConfig) ?? symbolBase
+let symbolRect = CGRect(x: 176, y: 176, width: 672, height: 672)
 
-let thumb = CGRect(x: 238, y: 355, width: 98, height: 245)
-fillRoundedRect(
-    thumb,
-    radius: 48,
-    rotation: -.pi / 6,
-    about: CGPoint(x: 286, y: 465)
-)
-
-let wrist = CGRect(x: 354, y: 560, width: 296, height: 168)
-fillRoundedRect(wrist, radius: 84)
+let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
+NSGraphicsContext.saveGraphicsState()
+NSGraphicsContext.current = nsContext
+symbolImage.isTemplate = true
+NSColor.black.set()
+symbolImage.draw(in: symbolRect)
+NSGraphicsContext.restoreGraphicsState()
 
 guard let image = context.makeImage() else {
     fputs("Failed to render icon image.\n", stderr)
