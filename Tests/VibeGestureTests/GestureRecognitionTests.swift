@@ -4,7 +4,7 @@ import XCTest
 
 final class GestureRecognitionTests: XCTestCase {
     func testGestureInterpreterEmitsRecordStartAndRearm() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 1_000)
 
         let recordResults = (0..<6).map { index in
@@ -33,7 +33,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterKeepsRecordLatchedAcrossBorderlineReleaseFrames() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 1_400)
 
         let recordResults = (0..<6).map { index in
@@ -73,7 +73,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterEmitsSubmitAndCancelOnlyOnce() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_000)
 
         let submitResults = (0..<4).map { index in
@@ -96,7 +96,7 @@ final class GestureRecognitionTests: XCTestCase {
         )
         XCTAssertEqual(submitRepeat.candidate, .noAction)
 
-        let cancelInterpreter = makeTrainedGestureInterpreter()
+        let cancelInterpreter = makeRuleBasedGestureInterpreter()
         let cancelResults = (0..<3).map { index in
             cancelInterpreter.interpret(
                 frameObservation: makeFrameObservation(
@@ -119,7 +119,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsBorderlineRecordLikePose() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_250)
 
         let borderlineResults = (0..<6).map { index in
@@ -134,19 +134,8 @@ final class GestureRecognitionTests: XCTestCase {
         XCTAssertEqual(borderlineResults.map(\.candidate), Array(repeating: .noAction, count: 6))
     }
 
-    func testGestureInterpreterAcceptsCalibratedRecordConfidenceAtRuntimeThreshold() {
-        let interpreter = GestureInterpreter(classifier: StubGesturePoseClassifier(
-            classification: GestureClassification(
-                label: .record,
-                confidence: 0.55,
-                scores: [
-                    .record: 0.55,
-                    .submit: 0.20,
-                    .cancel: 0.15,
-                    .background: 0.10
-                ]
-            )
-        ))
+    func testGestureInterpreterAcceptsRuleBasedRecordPose() {
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_300)
 
         let results = (0..<6).map { index in
@@ -163,7 +152,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsHalfCurledSubmitLikePose() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_375)
 
         let misfireResults = (0..<4).map { index in
@@ -179,7 +168,7 @@ final class GestureRecognitionTests: XCTestCase {
     }
 
     func testGestureInterpreterRejectsLegacyCancelLikePose() {
-        let interpreter = makeTrainedGestureInterpreter()
+        let interpreter = makeRuleBasedGestureInterpreter()
         let baseTime = Date(timeIntervalSinceReferenceDate: 2_500)
 
         let legacyCancelResults = (0..<3).map { index in
@@ -458,16 +447,8 @@ final class GestureRecognitionTests: XCTestCase {
         case halfCurledSubmit
     }
 
-    private struct StubGesturePoseClassifier: GesturePoseClassifying {
-        let classification: GestureClassification?
-
-        func classify(hand: HandPoseObservation) -> GestureClassification? {
-            classification
-        }
-    }
-
-    private func makeTrainedGestureInterpreter() -> GestureInterpreter {
-        GestureInterpreter(classifier: LearnedGesturePoseClassifier(model: makeTrainedClassifierModel()))
+    private func makeRuleBasedGestureInterpreter() -> GestureInterpreter {
+        GestureInterpreter()
     }
 
     private func makeTrainedClassifierModel() -> GestureClassifierModel {

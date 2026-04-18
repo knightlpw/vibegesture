@@ -65,7 +65,7 @@ final class GestureCalibrationController {
             classifierSourceDescription: loadedClassifier.source.displayName,
             statusMessage: persistedSamples.isEmpty
                 ? "Ready to calibrate"
-                : loadedClassifier.source.displayName
+                : "Stored calibration data loaded"
         )
     }
 
@@ -122,7 +122,7 @@ final class GestureCalibrationController {
             isDirty: false,
             canSave: Self.canSave(session: session),
             classifierSourceDescription: loadedClassifier.source.displayName,
-            statusMessage: "Saved \(session.samples.count) samples and reloaded \(loadedClassifier.source.displayName)"
+            statusMessage: "Saved \(session.samples.count) samples to calibration storage"
         )
         onClassifierReload?(loadedClassifier.model)
         return loadedClassifier.model
@@ -139,7 +139,7 @@ final class GestureCalibrationController {
             isDirty: false,
             canSave: false,
             classifierSourceDescription: loadedClassifier.source.displayName,
-            statusMessage: "Calibration data cleared and bootstrap classifier reloaded"
+            statusMessage: "Calibration data cleared"
         )
         onClassifierReload?(loadedClassifier.model)
         return loadedClassifier.model

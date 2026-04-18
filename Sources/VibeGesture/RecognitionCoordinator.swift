@@ -60,8 +60,4 @@ final class RecognitionCoordinator {
     func setRecordingActive(_ active: Bool) {
         stateMachine.setRecordingActive(active)
     }
-
-    func updateClassifier(_ classifier: GestureClassifierModel) {
-        interpreter.updateClassifier(LearnedGesturePoseClassifier(model: classifier))
-    }
 }

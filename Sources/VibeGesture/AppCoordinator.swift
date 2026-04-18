@@ -35,11 +35,7 @@ final class AppCoordinator: SafeShutdownHandling {
         self.configurationStore = configurationStore
         self.hotKeyManager = hotKeyManager
         let configuration = configurationStore.load()
-        let loadedClassifier = calibrationStore.loadClassifierResult()
-        let classifier = LearnedGesturePoseClassifier(model: loadedClassifier.model)
-        let recognitionCoordinator = RecognitionCoordinator(
-            interpreter: GestureInterpreter(classifier: classifier)
-        )
+        let recognitionCoordinator = RecognitionCoordinator()
         self.recognitionCoordinator = recognitionCoordinator
         let calibrationController = GestureCalibrationController(store: calibrationStore)
         self.calibrationController = calibrationController
@@ -49,9 +45,6 @@ final class AppCoordinator: SafeShutdownHandling {
         self.statusItemController = StatusItemController(appState: appState)
         calibrationController.onStatusChange = { [weak self] status in
             self?.appState.calibrationStatus = status
-        }
-        calibrationController.onClassifierReload = { [weak recognitionCoordinator] model in
-            recognitionCoordinator?.updateClassifier(model)
         }
         appState.calibrationStatus = calibrationController.status
         keyboardDispatcher.onResultChange = { [weak self] result in

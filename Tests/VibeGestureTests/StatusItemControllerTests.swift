@@ -46,11 +46,12 @@ final class StatusItemControllerTests: XCTestCase {
         XCTAssertEqual(snapshot[1], "Gesture candidate: Submit started")
         XCTAssertEqual(snapshot[2], "Gesture pose: Submit pose stabilized")
         XCTAssertEqual(snapshot[3], "Recent action: Submit")
-        XCTAssertEqual(snapshot[4], "Recording: Active")
-        XCTAssertEqual(snapshot[5], "Gate: Codex · supported")
-        XCTAssertEqual(snapshot[6], "Keyboard: Sent submit")
-        XCTAssertEqual(snapshot[7], "Permissions: Ready")
-        XCTAssertEqual(snapshot[8], "Camera: Running")
-        XCTAssertEqual(snapshot[9], "Disable Recognition")
+        XCTAssertEqual(snapshot[4], "Runtime: Rules mode")
+        XCTAssertEqual(snapshot[5], "Recording: Active")
+        XCTAssertEqual(snapshot[6], "Gate: Codex · supported")
+        XCTAssertEqual(snapshot[7], "Keyboard: Sent submit")
+        XCTAssertEqual(snapshot[8], "Permissions: Ready")
+        XCTAssertEqual(snapshot[9], "Camera: Running")
+        XCTAssertEqual(snapshot[10], "Disable Recognition")
     }
 }

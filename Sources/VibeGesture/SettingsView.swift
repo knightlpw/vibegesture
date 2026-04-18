@@ -78,6 +78,7 @@ struct SettingsView: View {
         GroupBox {
             VStack(alignment: .leading, spacing: 10) {
                 settingRow(title: "Recognition state", value: appState.recognitionState.displayName)
+                settingRow(title: "Runtime mode", value: "Rules mode")
                 settingRow(title: "Recording state", value: appState.isRecordingActive ? "Active" : "Inactive")
                 settingRow(title: "Gesture candidate", value: appState.latestGestureInterpretation?.candidateDisplayName ?? "Waiting for a stable gesture")
                 settingRow(title: "Gesture pose", value: appState.latestGestureInterpretation?.poseSummary ?? "Waiting for a stable gesture")
@@ -99,7 +100,7 @@ struct SettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Text("Capture a few samples for record, submit, cancel, and optionally background, then save to reload the calibrated classifier.")
+                Text("Capture a few samples for record, submit, cancel, and optionally background, then save the calibration data for later use.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -126,7 +127,7 @@ struct SettingsView: View {
                 }
 
                 HStack(spacing: 10) {
-                    Button("Save and reload classifier") {
+                    Button("Save calibration data") {
                         onCalibrationAction(.save)
                     }
                     .disabled(!appState.calibrationStatus.canSave)
@@ -139,7 +140,7 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     settingRow(title: "Saved samples", value: "\(appState.calibrationStatus.persistedSampleCount)")
                     settingRow(title: "Working samples", value: "\(appState.calibrationStatus.sampleCounts.values.reduce(0, +))")
-                    settingRow(title: "Classifier", value: appState.calibrationStatus.classifierSourceDescription)
+                    settingRow(title: "Calibration source", value: appState.calibrationStatus.classifierSourceDescription)
                 }
 
                 Text(appState.calibrationStatus.statusMessage)

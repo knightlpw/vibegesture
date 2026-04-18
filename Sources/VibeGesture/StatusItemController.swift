@@ -13,6 +13,7 @@ final class StatusItemController: NSObject {
     private let gestureCandidateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let gesturePoseItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let actionItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let runtimeModeItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let recordingItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let gateItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let keyboardItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -54,6 +55,7 @@ final class StatusItemController: NSObject {
             "Gesture candidate: \(gestureCandidateTitle())",
             "Gesture pose: \(gesturePoseTitle())",
             "Recent action: \(appState.latestRecognitionActionIntent.displayName)",
+            "Runtime: Rules mode",
             "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")",
             "Gate: \(appState.foregroundAppGateState.displayName)",
             "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)",
@@ -82,6 +84,7 @@ final class StatusItemController: NSObject {
         gestureCandidateItem.isEnabled = false
         gesturePoseItem.isEnabled = false
         actionItem.isEnabled = false
+        runtimeModeItem.isEnabled = false
         recordingItem.isEnabled = false
         gateItem.isEnabled = false
         keyboardItem.isEnabled = false
@@ -99,6 +102,7 @@ final class StatusItemController: NSObject {
         menu.addItem(gestureCandidateItem)
         menu.addItem(gesturePoseItem)
         menu.addItem(actionItem)
+        menu.addItem(runtimeModeItem)
         menu.addItem(recordingItem)
         menu.addItem(gateItem)
         menu.addItem(keyboardItem)
@@ -118,6 +122,7 @@ final class StatusItemController: NSObject {
         gestureCandidateItem.title = "Gesture candidate: \(gestureCandidateTitle())"
         gesturePoseItem.title = "Gesture pose: \(gesturePoseTitle())"
         actionItem.title = "Recent action: \(appState.latestRecognitionActionIntent.displayName)"
+        runtimeModeItem.title = "Runtime: Rules mode"
         recordingItem.title = "Recording: \(appState.isRecordingActive ? "Active" : "Inactive")"
         gateItem.title = "Gate: \(appState.foregroundAppGateState.displayName)"
         keyboardItem.title = "Keyboard: \(appState.latestKeyboardDispatchResult.displayName)"
