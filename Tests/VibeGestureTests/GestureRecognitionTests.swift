@@ -549,17 +549,17 @@ final class GestureRecognitionTests: XCTestCase {
             ringTip = landmark(0.650, 0.350)
             littleTip = landmark(0.700, 0.340)
         case .borderlineRecord:
-            thumbTip = landmark(0.560, 0.495)
-            indexTip = landmark(0.610, 0.520)
-            middleTip = landmark(0.605, 0.355)
-            ringTip = landmark(0.655, 0.350)
-            littleTip = landmark(0.705, 0.345)
-        case .recordRelease:
             thumbTip = landmark(0.420, 0.320)
-            indexTip = landmark(0.565, 0.870)
+            indexTip = landmark(0.610, 0.520)
             middleTip = landmark(0.625, 0.860)
             ringTip = landmark(0.675, 0.850)
             littleTip = landmark(0.725, 0.835)
+        case .recordRelease:
+            thumbTip = landmark(0.420, 0.320)
+            indexTip = landmark(0.585, 0.430)
+            middleTip = landmark(0.625, 0.410)
+            ringTip = landmark(0.675, 0.405)
+            littleTip = landmark(0.725, 0.395)
         case .halfCurledSubmit:
             thumbTip = landmark(0.565, 0.495)
             indexTip = landmark(0.575, 0.500)

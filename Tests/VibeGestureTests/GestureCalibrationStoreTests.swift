@@ -136,10 +136,10 @@ final class GestureCalibrationStoreTests: XCTestCase {
             littleTip = landmark(0.815, 0.840)
         case .recordRelease:
             thumbTip = landmark(0.420, 0.320)
-            indexTip = landmark(0.565, 0.870)
-            middleTip = landmark(0.625, 0.860)
-            ringTip = landmark(0.675, 0.850)
-            littleTip = landmark(0.725, 0.835)
+            indexTip = landmark(0.585, 0.430)
+            middleTip = landmark(0.625, 0.410)
+            ringTip = landmark(0.675, 0.405)
+            littleTip = landmark(0.725, 0.395)
         }
 
         return HandPoseObservation(

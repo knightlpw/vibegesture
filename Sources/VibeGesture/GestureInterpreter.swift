@@ -266,9 +266,7 @@ final class GestureInterpreter: GestureInterpreting {
         guard
             let wrist = hand.landmarks[.wrist],
             let thumbTip = hand.landmarks[.thumbTip],
-            let thumbIP = hand.landmarks[.thumbIP],
             let indexMCP = hand.landmarks[.indexMCP],
-            let indexPIP = hand.landmarks[.indexPIP],
             let indexTip = hand.landmarks[.indexTip],
             let middleMCP = hand.landmarks[.middleMCP],
             let middlePIP = hand.landmarks[.middlePIP],
@@ -295,18 +293,14 @@ final class GestureInterpreter: GestureInterpreting {
         let thumbIndexContactThreshold = 0.22
         let thumbIndexContacted = thumbIndexContactDistance <= thumbIndexContactThreshold
 
-        let indexExtended = isExtended(tip: indexTip, joint: indexPIP, wrist: wrist)
         let middleExtended = isExtended(tip: middleTip, joint: middlePIP, wrist: wrist)
         let ringExtended = isExtended(tip: ringTip, joint: ringPIP, wrist: wrist)
         let littleExtended = isExtended(tip: littleTip, joint: littlePIP, wrist: wrist)
-        let thumbOpening = distance(thumbTip, thumbIP) / handSpan
 
         return !thumbIndexContacted
-            && thumbOpening >= 0.08
-            && indexExtended
-            && middleExtended
-            && ringExtended
-            && littleExtended
+            && !middleExtended
+            && !ringExtended
+            && !littleExtended
     }
 
     private func distance(

@@ -235,7 +235,7 @@ Camera 权限和 Accessibility trust 应分开检查，这样 UI 才能准确说
 除非调优证明有必要，否则使用以下默认值：
 - 目标帧率：`10-15 FPS`
 - record 激活：`6 consecutive frames`
-- record re-arm：`4 consecutive frames without record`
+- record re-arm：`4 consecutive frames without record`；内部释放态可按“拇指和食指指尖不再接触，其余三指保持握拳”判定
 - submit 激活：`4 consecutive frames`
 - cancel 激活：`3 consecutive frames`
 - cooldown：`700 ms`
