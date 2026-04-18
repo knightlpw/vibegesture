@@ -56,6 +56,18 @@ The bundle is created under:
 .build/app-bundle/debug/VibeGesture.app
 ```
 
+### Build a distributable `.dmg`
+
+```bash
+bash scripts/build_dmg.sh
+```
+
+The DMG is created under:
+
+```text
+.build/distribution/VibeGesture-release.dmg
+```
+
 ## Repository Layout
 
 - `Sources/` - app implementation
